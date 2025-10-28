@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test</title>
+</head>
+<body>
+    <h1>Simple Test</h1>
+    <div id="output"></div>
+    
+    <script>
+        console.log('Script running...');
+        document.getElementById('output').innerHTML = '<p>JavaScript is working!</p>';
+        
+        // Test fetch
+        fetch('http://localhost:3000/api/kebab-builder/config')
+            .then(response => {
+                console.log('Fetch response:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('API data:', data);
+                document.getElementById('output').innerHTML += '<p>API response: ' + JSON.stringify(data.success) + '</p>';
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                document.getElementById('output').innerHTML += '<p style="color: red;">API Error: ' + error.message + '</p>';
+            });
+    </script>
+</body>
+</html>

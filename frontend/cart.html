@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aslan Food - Cart</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-50%) translateY(-2px);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .cart-content {
+            padding: 30px;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-cart img {
+            width: 200px;
+            opacity: 0.5;
+            margin-bottom: 20px;
+        }
+
+        .cart-item {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .kebab-visual {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .kebab-illustration {
+            width: 300px;
+            height: 200px;
+            background: linear-gradient(45deg, #ffd89b 0%, #19547b 100%);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            margin-right: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .tortilla-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: #f4e4bc;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .ingredients-layer {
+            position: absolute;
+            bottom: 35px;
+            left: 10px;
+            right: 10px;
+            height: 120px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 5px;
+            padding: 10px;
+        }
+
+        .ingredient-visual {
+            width: 40px;
+            height: 30px;
+            border-radius: 4px;
+            margin: 2px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .kebab-details {
+            flex: 1;
+        }
+
+        .kebab-size {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .ingredients-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .ingredient-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .ingredient-thumbnail {
+            width: 32px;
+            height: 24px;
+            object-fit: cover;
+            border-radius: 3px;
+            margin-right: 8px;
+        }
+
+        .ingredient-info {
+            flex: 1;
+        }
+
+        .ingredient-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .ingredient-price {
+            color: #FF6B6B;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .price-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .price-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .total-price {
+            border-top: 2px solid #FF6B6B;
+            padding-top: 15px;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.3em;
+            color: #FF6B6B;
+        }
+
+        .cart-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .remove-button {
+            background: #dc3545;
+            color: white;
+        }
+
+        .remove-button:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .checkout-button {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .checkout-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .cart-summary {
+            background: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .summary-title {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .final-total {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .checkout-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .continue-shopping {
+            background: #6c757d;
+            color: white;
+        }
+
+        .continue-shopping:hover {
+            background: #5a6268;
+        }
+
+        @media (max-width: 768px) {
+            .kebab-visual {
+                flex-direction: column;
+            }
+            
+            .kebab-illustration {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 20px;
+            }
+            
+            .cart-actions {
+                flex-direction: column;
+            }
+            
+            .checkout-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-button">← Back to Builder</a>
+            <h1>🛒 Your Cart</h1>
+            <p id="cartItemsCount">Review your delicious kebabs</p>
+        </div>
+
+        <div class="cart-content">
+            <div id="emptyCart" class="empty-cart" style="display: none;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🥙</div>
+                <h2>Your cart is empty</h2>
+                <p style="margin: 20px 0;">Start building your perfect kebab!</p>
+                <a href="index.html" class="action-button continue-shopping" style="display: inline-block; text-decoration: none;">
+                    Start Building
+                </a>
+            </div>
+
+            <div id="cartItems">
+                <!-- Cart items will be loaded here -->
+            </div>
+
+            <div id="cartSummary" class="cart-summary" style="display: none;">
+                <h3 class="summary-title">Order Summary</h3>
+                <div class="final-total" id="finalTotal">
+                    Total: $0.00
+                </div>
+                <div class="checkout-actions">
+                    <a href="index.html" class="action-button continue-shopping">Continue Shopping</a>
+                    <button class="action-button checkout-button" id="checkoutButton">
+                        Place Order 🚀
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="cart.js"></script>
+</body>
+</html>

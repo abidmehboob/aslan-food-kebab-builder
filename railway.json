@@ -1,0 +1,20 @@
+{
+  "build": {
+    "commands": ["cd backend && npm install"]
+  },
+  "start": {
+    "command": "cd backend && npm start"
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "$PORT",
+    "JWT_SECRET": "$JWT_SECRET",
+    "API_PREFIX": "/api",
+    "API_VERSION": "v1"
+  },
+  "healthcheck": {
+    "path": "/api/health",
+    "interval": "30s",
+    "timeout": "10s"
+  }
+}

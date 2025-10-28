@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test</title>
+</head>
+<body>
+    <h1>Debug Test Page</h1>
+    <div id="loading">Loading...</div>
+    <div id="builder" style="display: none;">
+        <h2>Builder loaded successfully!</h2>
+        <div id="sizeOptions"></div>
+        <div id="ingredientsContainer"></div>
+        <div id="kebabPreview"></div>
+    </div>
+    
+    <script>
+        console.log('Test script loaded');
+        
+        // Test the KebabBuilder class
+        try {
+            console.log('Creating KebabBuilder instance...');
+            const builder = new KebabBuilder();
+            console.log('KebabBuilder created successfully:', builder);
+        } catch (error) {
+            console.error('Error creating KebabBuilder:', error);
+            document.getElementById('loading').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+        }
+    </script>
+    <script src="kebab-builder.js"></script>
+</body>
+</html>

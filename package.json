@@ -1,0 +1,45 @@
+{
+  "name": "aslan-food-app",
+  "version": "1.0.0",
+  "description": "Production-ready kebab builder application with interactive frontend and robust backend",
+  "main": "backend/server.js",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev",
+    "prod": "cd backend && npm run prod",
+    "test": "cd backend && npm test",
+    "install-backend": "cd backend && npm install",
+    "install-all": "npm install && npm run install-backend",
+    "build": "echo 'Building production assets...' && npm run optimize-frontend",
+    "optimize-frontend": "node scripts/optimizeFrontend.js",
+    "deploy": "npm run build && npm run prod",
+    "logs": "cd backend && npm run logs",
+    "restart": "cd backend && npm run restart",
+    "stop": "cd backend && npm run stop",
+    "vercel-build": "cd backend && npm install",
+    "railway-build": "cd backend && npm install",
+    "render-build": "cd backend && npm install"
+  },
+  "keywords": [
+    "food",
+    "kebab",
+    "restaurant",
+    "web-app",
+    "production"
+  ],
+  "author": "Aslan Food Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aslan-food/kebab-builder.git"
+  },
+  "devDependencies": {
+    "clean-css-cli": "^5.6.3",
+    "html-minifier": "^4.0.0",
+    "terser": "^5.44.0"
+  }
+}

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aslan Food - Kebab Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .builder-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .ingredients-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+        }
+
+        .size-selector {
+            margin-bottom: 30px;
+        }
+
+        .size-selector h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .size-options {
+            display: flex;
+            gap: 15px;
+        }
+
+        .size-option {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .size-option:hover {
+            border-color: #FF6B6B;
+            background: #fff5f5;
+        }
+
+        .size-option.selected {
+            border-color: #FF6B6B;
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .ingredient-category {
+            margin-bottom: 25px;
+        }
+
+        .category-title {
+            color: #333;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #FF6B6B;
+        }
+
+        .ingredients-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .ingredient-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .ingredient-item:hover {
+            background: #f1f3f4;
+            border-color: #FF6B6B;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .ingredient-item.selected {
+            background: #e8f5e8;
+            border-color: #28a745;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .ingredient-image {
+            width: 60px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 12px;
+            border: 2px solid transparent;
+        }
+
+        .ingredient-item.selected .ingredient-image {
+            border-color: #28a745;
+        }
+
+        .ingredient-checkbox {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .ingredient-item[data-category="tortilla"] .ingredient-checkbox {
+            transform: scale(1.3);
+        }
+
+        .ingredient-info {
+            flex: 1;
+        }
+
+        .ingredient-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .ingredient-description {
+            font-size: 0.8em;
+            color: #666;
+            line-height: 1.2;
+        }
+
+        .ingredient-price {
+            color: #FF6B6B;
+            font-weight: bold;
+            margin-left: auto;
+            font-size: 1.1em;
+        }
+
+        .ingredient-protein {
+            font-size: 0.75em;
+            color: #28a745;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .order-summary {
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .summary-title {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .kebab-preview {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .selected-items {
+            margin-bottom: 15px;
+        }
+
+        .selected-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .selected-item:last-child {
+            border-bottom: none;
+        }
+
+        .price-breakdown {
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .price-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .total-price {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #FF6B6B;
+            border-top: 2px solid #e9ecef;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .order-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .order-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .order-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .popular-combos {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+        }
+
+        .popular-title {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .combos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .combo-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .combo-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: #FF6B6B;
+        }
+
+        .combo-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .combo-price {
+            color: #FF6B6B;
+            font-weight: bold;
+            font-size: 1.1em;
+            float: right;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .navigation {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .nav-button {
+            background: #FF6B6B;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .nav-button:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .cart-count {
+            background: white;
+            color: #FF6B6B;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 0.8em;
+            margin-left: 8px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .tortilla-required {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+            color: #856404;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .nutrition-info {
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+            border: 2px solid #28a745;
+        }
+
+        .protein-display {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        @media (max-width: 768px) {
+            .builder-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .ingredients-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .size-options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation">
+        <a href="cart.html" class="nav-button" id="cartButton">
+            🛒 Cart <span class="cart-count" id="cartCount">0</span>
+        </a>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🥙 Aslan Food Kebab Builder</h1>
+            <p>Create your perfect kebab with fresh ingredients</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <p>Loading ingredients...</p>
+        </div>
+
+        <div id="builder" class="builder-container" style="display: none;">
+            <div class="ingredients-section">
+                <!-- Size Selection -->
+                <div class="size-selector">
+                    <h3>Choose Your Size</h3>
+                    <div class="size-options" id="sizeOptions"></div>
+                        <!-- Size options will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Ingredients Categories -->
+                <div id="ingredientsContainer">
+                    <!-- Ingredients will be loaded here -->
+                </div>
+
+                <!-- Popular Combinations -->
+                <div class="popular-combos">
+                    <h3 class="popular-title">Popular Combinations</h3>
+                    <div class="combos-grid" id="popularCombos">
+                        <!-- Popular combos will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="order-summary">
+                <h3 class="summary-title">Your Kebab</h3>
+                
+                <div id="debugInfo" style="background: #ffe6e6; padding: 10px; margin-bottom: 10px; border-radius: 5px; font-size: 0.8em;">
+                    Debug: Waiting for interactions...
+                </div>
+                
+                <div class="kebab-preview">
+                    <div id="kebabPreview" style="margin-bottom: 15px; padding: 15px; background: #fff; border-radius: 8px; border: 2px dashed #e9ecef;">
+                        <p style="color: #666; text-align: center; font-style: italic;">Select a size and ingredients to see your kebab preview</p>
+                    </div>
+                    <div class="selected-items" id="selectedItems">
+                        <p style="text-align: center; color: #666;">Select ingredients to see your kebab</p>
+                    </div>
+                </div>
+
+                <div class="price-breakdown" id="priceBreakdown">
+                    <div class="price-line">
+                        <span>Base Price:</span>
+                        <span id="basePrice">$0.00</span>
+                    </div>
+                    <div class="price-line">
+                        <span>Ingredients:</span>
+                        <span id="ingredientsPrice">$0.00</span>
+                    </div>
+                    <div class="price-line total-price">
+                        <span>Total:</span>
+                        <span id="totalPrice">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="nutrition-info">
+                    <div class="protein-display">
+                        🥩 Total Protein: <span id="totalProtein">0g</span>
+                    </div>
+                    <div class="protein-display" style="margin-top: 5px;">
+                        ⚖️ Total Weight: <span id="totalWeight">0g</span>
+                    </div>
+                </div>
+
+                <button class="order-button" id="orderButton" disabled>
+                    Add to Cart - $0.00
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="kebab-builder.js"></script>
+</body>
+</html>

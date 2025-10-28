@@ -1,0 +1,37 @@
+services:
+  # Web service (Node.js backend)
+  - type: web
+    name: aslan-food-api
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        value: # You'll need to add a MongoDB Atlas connection string
+      - key: API_PREFIX
+        value: /api
+      - key: API_VERSION
+        value: v1
+    healthCheckPath: /api/health
+
+# Static site service (Frontend)
+  - type: static
+    name: aslan-food-frontend
+    buildCommand: echo "No build needed for static HTML"
+    staticPublishPath: ./frontend
+    routes:
+      - type: redirect
+        source: /api/*
+        destination: https://aslan-food-api.onrender.com/api/*
+    headers:
+      - key: X-Frame-Options
+        value: DENY
+      - key: X-Content-Type-Options
+        value: nosniff
