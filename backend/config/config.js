@@ -4,7 +4,7 @@ const config = {
   // Environment
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT, 10) || 3000,
-  HOST: process.env.HOST || 'localhost',
+  HOST: process.env.HOST || '0.0.0.0',
   
   // Database
   database: {
