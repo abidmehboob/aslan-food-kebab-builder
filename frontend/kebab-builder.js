@@ -584,8 +584,11 @@ class KebabBuilder {
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             // Development environment
             return 'http://localhost:3000/api';
+        } else if (hostname.includes('onrender.com')) {
+            // Render.com deployment - use same domain
+            return `${protocol}//${hostname}/api`;
         } else {
-            // Production environment - use same domain
+            // Other production environments - use same domain
             return `${protocol}//${hostname}/api`;
         }
     }
