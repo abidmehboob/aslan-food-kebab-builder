@@ -275,4 +275,232 @@ router.get('/popular', (req, res) => {
   }
 });
 
+// AI Image Generation endpoint
+router.post('/generate-images', async (req, res) => {
+  try {
+    const { openKebabPrompt, wrappedKebabPrompt, kebabData } = req.body;
+
+    // Validate input
+    if (!openKebabPrompt || !wrappedKebabPrompt || !kebabData) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters for image generation'
+      });
+    }
+
+    // Log the generation request
+    console.log('🎨 AI Image Generation Request:', {
+      size: kebabData.size,
+      ingredients: kebabData.ingredients,
+      measurements: kebabData.measurements,
+      timestamp: new Date().toISOString()
+    });
+
+    // Simulate AI image generation delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Generate images
+    const generatedImages = await generateKebabImages(openKebabPrompt, wrappedKebabPrompt, kebabData);
+
+    res.json({
+      success: true,
+      message: 'Images generated successfully',
+      data: generatedImages,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        prompts: {
+          openKebab: openKebabPrompt,
+          wrappedKebab: wrappedKebabPrompt
+        },
+        kebabSpecs: kebabData
+      }
+    });
+
+  } catch (error) {
+    console.error('Error generating AI images:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate AI images',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Generate kebab images using SVG placeholders
+ * In production, replace with actual AI service calls
+ */
+async function generateKebabImages(openPrompt, wrappedPrompt, kebabData) {
+  return {
+    openKebabImage: generatePlaceholderImageUrl('open-kebab', kebabData),
+    wrappedKebabImage: generatePlaceholderImageUrl('wrapped-kebab', kebabData),
+    metadata: {
+      generationTime: '3.2s',
+      model: 'demo-placeholder',
+      resolution: '512x512',
+      style: 'food-photography'
+    }
+  };
+}
+
+/**
+ * Generate SVG placeholder images
+ */
+function generatePlaceholderImageUrl(type, kebabData) {
+  const { size, ingredients, measurements } = kebabData;
+  
+  if (type === 'open-kebab') {
+    const svg = createOpenKebabSVG(size, ingredients, measurements);
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  } else {
+    const svg = createWrappedKebabSVG(size, measurements);
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  }
+}
+
+/**
+ * Create SVG representation of open kebab
+ */
+function createOpenKebabSVG(size, ingredients, measurements) {
+  const colors = {
+    'Chicken Breast': '#f4a261',
+    'Lamb Meat': '#e63946',
+    'Beef Kebab': '#8b2635',
+    'Mixed Meat': '#dc2626',
+    'Lettuce': '#2d6a2d',
+    'Tomatoes': '#dc2626',
+    'Onions': '#fbbf24',
+    'Cucumbers': '#059669',
+    'Peppers': '#dc2626',
+    'Pickles': '#22c55e',
+    'Garlic Sauce': '#f3f4f6',
+    'Chili Sauce': '#dc2626',
+    'Yogurt Sauce': '#f8fafc',
+    'Tahini': '#d97706',
+    'Hummus': '#eab308'
+  };
+
+  const ingredientElements = ingredients.slice(0, 12).map((ingredient, index) => {
+    const x = 80 + (index % 6) * 60;
+    const y = 140 + Math.floor(index / 6) * 50;
+    const color = colors[ingredient] || '#94a3b8';
+    
+    return `
+      <ellipse cx="${x}" cy="${y}" rx="25" ry="18" fill="${color}" opacity="0.9" stroke="#374151" stroke-width="1"/>
+      <text x="${x}" y="${y + 35}" text-anchor="middle" font-size="9" font-weight="bold" fill="#374151">${ingredient.slice(0, 10)}</text>
+    `;
+  }).join('');
+
+  return `
+    <svg width="500" height="400" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background gradient -->
+      <defs>
+        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#f8fafc;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <rect width="500" height="400" fill="url(#bgGradient)"/>
+      
+      <!-- Tortilla base (open and spread) -->
+      <ellipse cx="250" cy="200" rx="220" ry="140" fill="#f4e4bc" stroke="#d4a574" stroke-width="3" opacity="0.9"/>
+      <ellipse cx="250" cy="200" rx="210" ry="130" fill="none" stroke="#e6d3a3" stroke-width="1"/>
+      
+      <!-- Ingredients scattered on tortilla -->
+      ${ingredientElements}
+      
+      <!-- Title with background -->
+      <rect x="50" y="20" width="400" height="50" fill="rgba(255,255,255,0.9)" rx="10"/>
+      <text x="250" y="40" text-anchor="middle" font-size="22" font-weight="bold" fill="#1f2937">
+        ${size.toUpperCase()} KEBAB - OPEN VIEW
+      </text>
+      <text x="250" y="60" text-anchor="middle" font-size="14" fill="#6b7280">
+        🥙 All Ingredients Visible • AI Generated Food Photography
+      </text>
+      
+      <!-- Measurements box -->
+      <rect x="350" y="320" width="130" height="60" fill="rgba(255,255,255,0.95)" stroke="#d1d5db" rx="5"/>
+      <text x="415" y="340" text-anchor="middle" font-size="12" font-weight="bold" fill="#374151">SPECIFICATIONS</text>
+      <text x="415" y="355" text-anchor="middle" font-size="10" fill="#6b7280">Length: ${measurements.length}cm</text>
+      <text x="415" y="368" text-anchor="middle" font-size="10" fill="#6b7280">Weight: ${measurements.weight}g</text>
+    </svg>
+  `;
+}
+
+/**
+ * Create SVG representation of wrapped kebab with measurements
+ */
+function createWrappedKebabSVG(size, measurements) {
+  const kebabLength = measurements.length * 6; // Scale for display
+  const kebabHeight = measurements.diameter * 6;
+  
+  return `
+    <svg width="500" height="400" xmlns="http://www.w3.org/2000/svg">
+      <!-- Clean white background -->
+      <rect width="500" height="400" fill="#ffffff"/>
+      
+      <!-- Drop shadow -->
+      <ellipse cx="252" cy="202" rx="${kebabLength/2 + 5}" ry="${kebabHeight/2 + 3}" fill="rgba(0,0,0,0.1)" opacity="0.5"/>
+      
+      <!-- Wrapped kebab -->
+      <g transform="translate(250, 200)">
+        <!-- Main kebab body with gradient -->
+        <defs>
+          <linearGradient id="kebabGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#f4e4bc;stop-opacity:1" />
+            <stop offset="30%" style="stop-color:#e6d3a3;stop-opacity:1" />
+            <stop offset="70%" style="stop-color:#d4a574;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#c49a6b;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        
+        <ellipse cx="0" cy="0" rx="${kebabLength/2}" ry="${kebabHeight/2}" 
+                 fill="url(#kebabGradient)" stroke="#a8845a" stroke-width="2"/>
+        
+        <!-- Wrapping texture lines -->
+        <path d="M-${kebabLength/2},0 Q-${kebabLength/4},-${kebabHeight/4} 0,0 Q${kebabLength/4},-${kebabHeight/4} ${kebabLength/2},0" 
+              stroke="#9d7349" stroke-width="1.5" fill="none" opacity="0.7"/>
+        <path d="M-${kebabLength/2},0 Q-${kebabLength/4},${kebabHeight/4} 0,0 Q${kebabLength/4},${kebabHeight/4} ${kebabLength/2},0" 
+              stroke="#9d7349" stroke-width="1.5" fill="none" opacity="0.7"/>
+        
+        <!-- Kebab end details -->
+        <circle cx="-${kebabLength/2}" cy="0" r="3" fill="#8b6914"/>
+        <circle cx="${kebabLength/2}" cy="0" r="3" fill="#8b6914"/>
+      </g>
+      
+      <!-- Measurement lines with arrows -->
+      <!-- Length measurement -->
+      <line x1="70" y1="280" x2="${430}" y2="280" stroke="#1f2937" stroke-width="2"/>
+      <polygon points="70,275 70,285 60,280" fill="#1f2937"/>
+      <polygon points="430,275 430,285 440,280" fill="#1f2937"/>
+      <text x="250" y="300" text-anchor="middle" font-size="16" font-weight="bold" fill="#1f2937">${measurements.length} cm</text>
+      
+      <!-- Diameter measurement -->
+      <line x1="180" y1="120" x2="180" y2="280" stroke="#1f2937" stroke-width="2"/>
+      <polygon points="175,120 185,120 180,110" fill="#1f2937"/>
+      <polygon points="175,280 185,280 180,290" fill="#1f2937"/>
+      <text x="160" y="205" text-anchor="middle" font-size="16" font-weight="bold" fill="#1f2937" 
+            transform="rotate(-90, 160, 205)">⌀ ${measurements.diameter} cm</text>
+      
+      <!-- Title section -->
+      <rect x="50" y="20" width="400" height="70" fill="rgba(31,41,55,0.95)" rx="10"/>
+      <text x="250" y="45" text-anchor="middle" font-size="24" font-weight="bold" fill="#ffffff">
+        ${size.toUpperCase()} KEBAB
+      </text>
+      <text x="250" y="65" text-anchor="middle" font-size="14" fill="#d1d5db">
+        📏 Technical Specifications • Precise Measurements
+      </text>
+      <text x="250" y="80" text-anchor="middle" font-size="12" fill="#9ca3af">
+        Professional Food Measurement Standards
+      </text>
+      
+      <!-- Weight specification box -->
+      <rect x="350" y="320" width="130" height="60" fill="rgba(31,41,55,0.95)" rx="8"/>
+      <text x="415" y="340" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">WEIGHT</text>
+      <text x="415" y="360" text-anchor="middle" font-size="20" font-weight="bold" fill="#10b981">${measurements.weight}g</text>
+      <text x="415" y="375" text-anchor="middle" font-size="9" fill="#9ca3af">Estimated Total</text>
+    </svg>
+  `;
+}
+
 module.exports = router;
