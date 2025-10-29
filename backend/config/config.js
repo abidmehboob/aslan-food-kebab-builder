@@ -81,12 +81,17 @@ const config = {
 
 // Validate required environment variables in production
 if (config.NODE_ENV === 'production') {
-  const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI'];
+  const requiredEnvVars = ['JWT_SECRET'];
   const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
     console.error('Missing required environment variables:', missingVars.join(', '));
     process.exit(1);
+  }
+  
+  // MongoDB is optional - warn if missing but don't exit
+  if (!process.env.MONGODB_URI) {
+    console.warn('MONGODB_URI not provided - database features will be disabled');
   }
 }
 

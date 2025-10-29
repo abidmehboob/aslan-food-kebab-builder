@@ -87,7 +87,9 @@ app.get('/api/health', (req, res) => {
     environment: config.NODE_ENV,
     version: require('../package.json').version,
     uptime: process.uptime(),
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    database: process.env.MONGODB_URI ? 
+      (mongoose.connection.readyState === 1 ? 'connected' : 'disconnected') : 
+      'not configured'
   };
   
   logger.info('Health check requested', { 
@@ -112,8 +114,14 @@ app.use(notFoundHandler);
 // Global error handling middleware
 app.use(errorHandler);
 
-// Database connection with production configurations
+// Database connection with production configurations (optional)
 const connectDB = async () => {
+  // Skip database connection if MONGODB_URI is not provided
+  if (!process.env.MONGODB_URI) {
+    logger.warn('MONGODB_URI not provided - running without database');
+    return false;
+  }
+
   try {
     mongoose.set('strictQuery', true);
     
@@ -133,6 +141,8 @@ const connectDB = async () => {
       logger.warn('Database disconnected');
     });
     
+    return true;
+    
   } catch (error) {
     logger.error('Database connection failed:', {
       message: error.message,
@@ -140,10 +150,11 @@ const connectDB = async () => {
     });
     
     if (config.NODE_ENV === 'production') {
-      logger.error('Exiting due to database connection failure in production');
-      process.exit(1);
+      logger.warn('Database connection failed - continuing without database features');
+      return false;
     } else {
       logger.warn('Server will continue without database connection in development');
+      return false;
     }
   }
 };
@@ -151,8 +162,8 @@ const connectDB = async () => {
 // Start server with proper error handling
 const startServer = async () => {
   try {
-    // Connect to database first
-    await connectDB();
+    // Try to connect to database (optional)
+    const dbConnected = await connectDB();
     
     // Start HTTP server
     const server = app.listen(config.PORT, config.HOST, () => {

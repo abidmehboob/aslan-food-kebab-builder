@@ -39,7 +39,7 @@ git push -u origin main
 - **Start Command**: `cd backend && npm start`
 
 #### Step 4: Environment Variables
-Add these in the Render dashboard:
+Add these **required** variables in the Render dashboard:
 
 ```bash
 NODE_ENV=production
@@ -48,10 +48,18 @@ API_PREFIX=/api
 API_VERSION=v1
 ```
 
+**Optional variables (if you want database features):**
+```bash
+# Only add if you have a MongoDB database
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/aslan-food
+```
+
 **To generate a strong JWT_SECRET:**
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
+
+> **Note**: The kebab builder works perfectly without MongoDB! It uses static ingredient data. Only add MONGODB_URI if you plan to add user accounts, order history, or dynamic ingredients later.
 
 #### Step 5: Advanced Settings
 - **Auto-Deploy**: `Yes` (deploys on git push)

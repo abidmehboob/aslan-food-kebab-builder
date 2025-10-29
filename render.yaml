@@ -14,6 +14,9 @@ services:
         value: /api
       - key: API_VERSION
         value: v1
+      # MongoDB is optional - kebab builder works with static data
+      # - key: MONGODB_URI
+      #   value: your-mongodb-connection-string
     healthCheckPath: /api/health
     disk:
       name: aslan-food-disk
