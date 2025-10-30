@@ -549,14 +549,25 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
             .hero-container {
                 grid-template-columns: 1fr;
                 text-align: center;
                 gap: 2rem;
+                padding: 2rem 1rem;
             }
 
             .hero-content h1 {
                 font-size: 2.5rem;
+                line-height: 1.2;
+            }
+
+            .hero-content p {
+                font-size: 1rem;
+                margin: 1rem 0;
             }
 
             .nav-links {
@@ -566,19 +577,99 @@
             .hero-buttons {
                 flex-direction: column;
                 align-items: center;
+                gap: 1rem;
+                width: 100%;
+            }
+
+            .hero-buttons .cta-button {
+                width: 100%;
+                max-width: 300px;
+                padding: 15px 25px;
+                font-size: 1rem;
             }
 
             .ai-content {
                 grid-template-columns: 1fr;
                 text-align: center;
+                gap: 2rem;
+                padding: 2rem 1rem;
+            }
+
+            .hero-visual {
+                margin-top: 2rem;
+            }
+
+            .kebab-showcase {
+                width: 300px;
+                height: 300px;
             }
 
             .section-title {
                 font-size: 2rem;
+                line-height: 1.3;
+            }
+
+            .section-subtitle {
+                font-size: 1rem;
             }
 
             .cta h2 {
                 font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            .hero-container {
+                padding: 1.5rem 0.5rem;
+                gap: 1.5rem;
+            }
+
+            .hero-content h1 {
+                font-size: 2rem;
+                line-height: 1.2;
+            }
+
+            .hero-content p {
+                font-size: 0.9rem;
+            }
+
+            .hero-buttons .cta-button {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .section-subtitle {
+                font-size: 0.9rem;
+            }
+
+            .ai-content {
+                padding: 1.5rem 0.5rem;
+                gap: 1.5rem;
+            }
+
+            .kebab-showcase {
+                width: 250px;
+                height: 250px;
+            }
+
+            .cta {
+                padding: 2rem 0.5rem;
+            }
+
+            .cta h2 {
+                font-size: 1.5rem;
+            }
+
+            .nav-container {
+                padding: 0.5rem;
             }
         }
 

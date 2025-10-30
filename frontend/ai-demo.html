@@ -163,7 +163,7 @@
                 <small><strong>💡 Smart Fallbacks:</strong> If one free service is busy, we automatically try the next one. Always works!</small>
             </div>
             
-            <p><strong>API Endpoint:</strong> <code>/api/kebab-builder/generate-images</code></p>
+            <p><strong>API Endpoint:</strong> <code>/api/v1/kebab-builder/generate-images</code></p>
             <p style="color: #666; font-size: 0.9em;"><strong>Monthly Savings:</strong> $50-200 compared to paid AI services</p>
         </div>
 
@@ -210,7 +210,7 @@
             };
             
             try {
-                const response = await fetch(`${getApiBaseUrl()}/kebab-builder/generate-images`, {
+                const response = await fetch(`${getApiBaseUrl()}/v1/kebab-builder/generate-images`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -253,7 +253,40 @@
             } catch (error) {
                 console.error('Error:', error);
                 status.className = 'status error';
-                status.textContent = `❌ Error: ${error.message}`;
+                
+                // Check if it's a rate limit or service error
+                if (error.message.includes('rate limit') || error.message.includes('Too many requests')) {
+                    status.textContent = `⏸️ AI service temporarily busy. Showing SVG fallback...`;
+                    
+                    // Show SVG fallback
+                    try {
+                        const svgResponse = await fetch(`${getApiBaseUrl()}/v1/ingredients/preview`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                size: 'large',
+                                ingredients: ['Chicken Breast', 'Lamb Meat', 'Lettuce', 'Tomatoes', 'Onions', 'Garlic Sauce', 'Chili Sauce']
+                            })
+                        });
+                        
+                        const svgData = await svgResponse.json();
+                        if (svgData.success) {
+                            container.innerHTML = `
+                                <div style="text-align: center; padding: 20px; border: 2px dashed #28a745; border-radius: 10px; background: #f8f9fa;">
+                                    <h4 style="color: #28a745; margin-bottom: 15px;">📊 Professional SVG Visualization</h4>
+                                    ${svgData.data}
+                                    <p style="margin-top: 15px; color: #666; font-size: 0.9em;">
+                                        AI services are temporarily busy, but your kebab visualization is still available!
+                                    </p>
+                                </div>
+                            `;
+                        }
+                    } catch (svgError) {
+                        console.error('SVG fallback failed:', svgError);
+                    }
+                } else {
+                    status.textContent = `❌ Error: ${error.message}`;
+                }
             } finally {
                 button.disabled = false;
                 button.textContent = '🎨 Generate Sample Kebab Images';

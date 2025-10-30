@@ -41,19 +41,45 @@ class CartManager {
     }
 
     async init() {
-        await this.loadIngredients();
+        console.log('🚀 Initializing cart manager...');
+        
+        // Try to load ingredients with retry
+        let retries = 3;
+        while (!this.ingredients && retries > 0) {
+            await this.loadIngredients();
+            if (!this.ingredients) {
+                console.warn(`⚠️ Ingredients loading failed, retrying... (${retries} attempts left)`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                retries--;
+            }
+        }
+        
+        if (!this.ingredients) {
+            console.error('❌ Failed to load ingredients after multiple attempts');
+            // Fallback: use empty array and show error message
+            this.ingredients = [];
+        }
+        
+        console.log('🧄 Ingredients loaded:', this.ingredients ? this.ingredients.length : 'failed');
         this.loadCart();
         this.renderCart();
         this.setupEventListeners();
+        console.log('✅ Cart manager initialized');
     }
 
     async loadIngredients() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/kebab-builder/config`);
+            console.log('🌐 Fetching ingredients from:', `${this.apiBaseUrl}/kebab-builder/config`);
+            const response = await fetch(`${this.apiBaseUrl}/v1/kebab-builder/config`);
             const data = await response.json();
+            
+            console.log('📦 API response:', data);
             
             if (data.success) {
                 this.ingredients = data.data.ingredients;
+                console.log('✅ Ingredients loaded successfully:', this.ingredients.length);
+            } else {
+                console.error('❌ Failed to load ingredients:', data.message);
             }
         } catch (error) {
             console.error('Error loading ingredients:', error);
@@ -67,9 +93,23 @@ class CartManager {
 
     loadCart() {
         this.cart = JSON.parse(localStorage.getItem('kebabCart') || '[]');
+        console.log('🛒 Cart loaded from localStorage:', this.cart);
+        console.log('🛒 Cart length:', this.cart.length);
+        
+        // Validate cart items
+        this.cart.forEach((item, index) => {
+            console.log(`🔍 Validating cart item ${index}:`, {
+                hasSelectedIngredients: Array.isArray(item.selectedIngredients),
+                selectedIngredientsLength: item.selectedIngredients ? item.selectedIngredients.length : 0,
+                hasPricing: !!item.pricing,
+                hasSize: !!item.size,
+                structure: Object.keys(item)
+            });
+        });
     }
 
     renderCart() {
+        console.log('🛒 Rendering cart with', this.cart.length, 'items');
         const cartItemsContainer = document.getElementById('cartItems');
         const emptyCart = document.getElementById('emptyCart');
         const cartSummary = document.getElementById('cartSummary');
@@ -78,6 +118,7 @@ class CartManager {
         const cartContentContainer = document.getElementById('cartContentContainer');
 
         if (this.cart.length === 0) {
+            console.log('🛒 Cart is empty, showing empty cart message');
             emptyCart.style.display = 'block';
             cartContentContainer.style.display = 'none';
             cartItemsCount.textContent = 'Your cart is empty - time to build some kebabs!';
@@ -127,9 +168,27 @@ class CartManager {
         kebabDiv.dataset.index = index;
 
         // Get ingredient details
+        console.log('🥙 Processing kebab:', kebab);
+        console.log('🥙 Selected ingredients:', kebab.selectedIngredients);
+        console.log('🥙 Available ingredients:', this.ingredients ? this.ingredients.length : 'not loaded');
+        
         const selectedIngredientDetails = kebab.selectedIngredients.map(id => {
-            return this.ingredients.find(ing => ing.id === id);
+            const ingredient = this.ingredients.find(ing => ing.id === id);
+            if (!ingredient) {
+                console.warn('🚫 Ingredient not found for ID:', id);
+                // Create a fallback ingredient
+                return {
+                    id: id,
+                    name: `Ingredient ${id}`,
+                    category: 'unknown',
+                    price: 0,
+                    description: 'Ingredient details not available'
+                };
+            }
+            return ingredient;
         }).filter(ing => ing);
+        
+        console.log('🥙 Found ingredient details:', selectedIngredientDetails.length);
 
         // Create visual representation
         const kebabVisual = this.createKebabVisual(selectedIngredientDetails);
@@ -973,7 +1032,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Global function to add test kebab to cart
+// Debug function to clear cart
+window.clearCart = function() {
+    localStorage.removeItem('kebabCart');
+    console.log('🗑️ Cart cleared from localStorage');
+    window.location.reload();
+};
+
+// Debug function to show cart contents
+window.showCartContents = function() {
+    const cart = JSON.parse(localStorage.getItem('kebabCart') || '[]');
+    console.log('🛒 Current cart contents:', cart);
+    console.log('🛒 Cart length:', cart.length);
+    return cart;
+};
+
 window.addTestKebab = function() {
+    console.log('🧪 Adding test kebab...');
+    
     const testKebab = {
         id: Date.now(),
         size: 'large',
@@ -989,15 +1065,29 @@ window.addTestKebab = function() {
     };
     
     const cart = JSON.parse(localStorage.getItem('kebabCart') || '[]');
+    console.log('🛒 Current cart before adding:', cart);
+    
     cart.push(testKebab);
     localStorage.setItem('kebabCart', JSON.stringify(cart));
     
+    console.log('🛒 Cart after adding:', cart);
     console.log('✅ Test kebab added to cart! Reload page to see the improved visualization system.');
     
     // Reload the page to show the new cart item
     setTimeout(() => {
         window.location.reload();
     }, 500);
+};
+
+// Force refresh the cart display
+window.refreshCartDisplay = function() {
+    if (window.cartManager) {
+        console.log('🔄 Force refreshing cart display...');
+        window.cartManager.loadCart();
+        window.cartManager.renderCart();
+    } else {
+        console.error('❌ Cart manager not initialized');
+    }
 };
 
 // Global function to force SVG preview (bypass AI)

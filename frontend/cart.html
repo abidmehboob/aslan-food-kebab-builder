@@ -708,6 +708,22 @@
                 <h1>🛒 Shopping Cart</h1>
             </div>
             <p class="cart-subtitle" id="cartItemsCount">Review your delicious AI-powered kebabs</p>
+            
+            <!-- Debug buttons -->
+            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                <button onclick="addTestKebab()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">
+                    🧪 Add Test Kebab
+                </button>
+                <button onclick="showCartContents()" style="background: #17a2b8; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">
+                    📋 Show Cart Contents
+                </button>
+                <button onclick="clearCart()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">
+                    🗑️ Clear Cart
+                </button>
+                <button onclick="refreshCartDisplay()" style="background: #6f42c1; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">
+                    🔄 Refresh Display
+                </button>
+            </div>
         </div>
 
         <div id="emptyCart" class="empty-cart" style="display: none;">
