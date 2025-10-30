@@ -70,7 +70,7 @@ class CartManager {
     async loadIngredients() {
         try {
             console.log('🌐 Fetching ingredients from:', `${this.apiBaseUrl}/kebab-builder/config`);
-            const response = await fetch(`${this.apiBaseUrl}/v1/kebab-builder/config`);
+            const response = await fetch(`${this.apiBaseUrl}/kebab-builder/config`);
             const data = await response.json();
             
             console.log('📦 API response:', data);
@@ -83,11 +83,20 @@ class CartManager {
             }
         } catch (error) {
             console.error('Error loading ingredients:', error);
-            // Fallback ingredients for demo
+            // Comprehensive fallback ingredients for demo
             this.ingredients = [
-                { id: 1, name: 'Chicken Breast', category: 'protein', price: 4.50, image: '', protein: 25.4, weight: 120 },
-                { id: 2, name: 'Lamb Meat', category: 'protein', price: 6.00, image: '', protein: 22.8, weight: 110 }
+                { id: 1, name: 'Chicken Breast', category: 'protein', price: 4.50, image: '', protein: 25.4, weight: 120, description: 'Tender grilled chicken breast' },
+                { id: 2, name: 'Lamb Meat', category: 'protein', price: 6.00, image: '', protein: 22.8, weight: 110, description: 'Succulent lamb meat' },
+                { id: 3, name: 'Beef Strips', category: 'protein', price: 5.25, image: '', protein: 26.1, weight: 115, description: 'Premium beef strips' },
+                { id: 4, name: 'Lettuce', category: 'vegetable', price: 0.75, image: '', protein: 1.4, weight: 20, description: 'Fresh crisp lettuce' },
+                { id: 5, name: 'Tomatoes', category: 'vegetable', price: 1.00, image: '', protein: 0.9, weight: 30, description: 'Ripe juicy tomatoes' },
+                { id: 6, name: 'Onions', category: 'vegetable', price: 0.50, image: '', protein: 1.1, weight: 25, description: 'Sweet red onions' },
+                { id: 7, name: 'Cucumbers', category: 'vegetable', price: 0.85, image: '', protein: 0.7, weight: 28, description: 'Fresh cucumbers' },
+                { id: 8, name: 'Cheddar Cheese', category: 'cheese', price: 1.50, image: '', protein: 7.0, weight: 35, description: 'Sharp cheddar cheese' },
+                { id: 9, name: 'Feta Cheese', category: 'cheese', price: 1.75, image: '', protein: 4.3, weight: 30, description: 'Crumbled feta cheese' },
+                { id: 10, name: 'Hummus', category: 'sauce', price: 1.25, image: '', protein: 2.0, weight: 40, description: 'Creamy hummus spread' }
             ];
+            console.log('✅ Using fallback ingredients:', this.ingredients.length);
         }
     }
 
@@ -135,11 +144,21 @@ class CartManager {
         let totalWeight = 0;
 
         this.cart.forEach((kebab, index) => {
-            const kebabElement = this.createKebabElement(kebab, index);
-            cartItemsContainer.appendChild(kebabElement);
-            grandTotal += kebab.pricing.total;
-            totalProtein += kebab.protein || 0;
-            totalWeight += kebab.weight || 0;
+            console.log(`🔍 Processing cart item ${index}:`, kebab);
+            try {
+                const kebabElement = this.createKebabElement(kebab, index);
+                if (kebabElement) {
+                    cartItemsContainer.appendChild(kebabElement);
+                    console.log(`✅ Successfully added kebab ${index} to DOM`);
+                } else {
+                    console.error(`❌ Failed to create element for kebab ${index}`);
+                }
+                grandTotal += kebab.pricing ? kebab.pricing.total : 0;
+                totalProtein += kebab.protein || 0;
+                totalWeight += kebab.weight || 0;
+            } catch (error) {
+                console.error(`❌ Error processing kebab ${index}:`, error);
+            }
         });
 
         // Update cart statistics
@@ -163,6 +182,18 @@ class CartManager {
     }
 
     createKebabElement(kebab, index) {
+        console.log(`🔧 Creating kebab element for index ${index}`);
+        
+        if (!kebab) {
+            console.error('❌ Kebab is null or undefined');
+            return null;
+        }
+
+        if (!kebab.selectedIngredients) {
+            console.error('❌ Kebab has no selectedIngredients');
+            return null;
+        }
+
         const kebabDiv = document.createElement('div');
         kebabDiv.className = 'cart-item';
         kebabDiv.dataset.index = index;
@@ -173,15 +204,21 @@ class CartManager {
         console.log('🥙 Available ingredients:', this.ingredients ? this.ingredients.length : 'not loaded');
         
         const selectedIngredientDetails = kebab.selectedIngredients.map(id => {
-            const ingredient = this.ingredients.find(ing => ing.id === id);
+            const ingredient = this.ingredients.find(ing => ing.id === id || ing.id === parseInt(id));
             if (!ingredient) {
-                console.warn('🚫 Ingredient not found for ID:', id);
-                // Create a fallback ingredient
+                console.warn('🚫 Ingredient not found for ID:', id, 'Available IDs:', this.ingredients.map(i => i.id));
+                // Create a meaningful fallback ingredient based on common IDs
+                const fallbackNames = {
+                    1: 'Chicken Breast', 2: 'Lamb Meat', 3: 'Beef Strips', 4: 'Lettuce', 5: 'Tomatoes',
+                    6: 'Onions', 7: 'Cucumbers', 8: 'Cheddar Cheese', 9: 'Feta Cheese', 10: 'Hummus'
+                };
                 return {
                     id: id,
-                    name: `Ingredient ${id}`,
+                    name: fallbackNames[id] || `Ingredient #${id}`,
                     category: 'unknown',
-                    price: 0,
+                    price: 1.00,
+                    protein: 2.0,
+                    weight: 25,
                     description: 'Ingredient details not available'
                 };
             }
@@ -191,14 +228,50 @@ class CartManager {
         console.log('🥙 Found ingredient details:', selectedIngredientDetails.length);
 
         // Create visual representation
-        const kebabVisual = this.createKebabVisual(selectedIngredientDetails);
-        const ingredientsList = this.createIngredientsList(selectedIngredientDetails);
+        let kebabVisual, ingredientsList, aiImagesSection;
         
-        // Create AI generated images section
-        const aiImagesSection = this.createAIImagesSection(kebab, selectedIngredientDetails, index);
+        try {
+            kebabVisual = this.createKebabVisual(selectedIngredientDetails);
+            ingredientsList = this.createIngredientsList(selectedIngredientDetails);
+            aiImagesSection = this.createAIImagesSection(kebab, selectedIngredientDetails, index);
+        } catch (error) {
+            console.error('❌ Error creating kebab sections:', error);
+            // Fallback content
+            kebabVisual = '<div class="kebab-illustration">🥙 Kebab Visual</div>';
+            ingredientsList = '<div class="ingredients-list">Ingredients loading...</div>';
+            aiImagesSection = '<div class="ai-images-section">AI images section</div>';
+        }
 
         const proteinContent = kebab.protein || 0;
         const weightContent = kebab.weight || 0;
+        const totalPrice = kebab.pricing ? kebab.pricing.total : 0;
+
+        // Simplified kebab display - fallback if complex rendering fails
+        if (!kebabVisual || !ingredientsList || !aiImagesSection) {
+            console.warn('⚠️ Using simplified kebab display');
+            
+            // Create ingredient names list for simplified display
+            const ingredientNames = selectedIngredientDetails.map(ing => ing.name).join(', ') || 'No ingredients specified';
+            
+            kebabDiv.innerHTML = `
+                <div class="cart-item-simple">
+                    <h3>🥙 ${kebab.size ? kebab.size.charAt(0).toUpperCase() + kebab.size.slice(1) : 'Custom'} Kebab</h3>
+                    <p><strong>Price:</strong> $${totalPrice.toFixed(2)}</p>
+                    <p><strong>Ingredients (${selectedIngredientDetails.length}):</strong> ${ingredientNames}</p>
+                    <p><strong>Protein:</strong> ${proteinContent}g | <strong>Weight:</strong> ${weightContent}g</p>
+                    <div class="cart-actions">
+                        <button class="action-button remove-button" onclick="cartManager.removeFromCart(${index})">
+                            Remove from Cart
+                        </button>
+                        <button class="action-button generate-ai-btn" onclick="cartManager.generateKebabImages(${index})" 
+                                style="background: linear-gradient(45deg, #667eea, #764ba2) !important; color: white !important; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; margin: 5px 0; min-width: 180px; display: block; width: 100%;">
+                            🎨 Generate AI Images
+                        </button>
+                    </div>
+                </div>
+            `;
+            return kebabDiv;
+        }
 
         kebabDiv.innerHTML = `
             <div class="kebab-visual">
@@ -317,17 +390,27 @@ class CartManager {
     }
 
     createIngredientsList(ingredients) {
+        if (!ingredients || ingredients.length === 0) {
+            return '<div class="no-ingredients">No ingredients specified</div>';
+        }
+        
         return ingredients.map(ingredient => {
-            const priceText = ingredient.price === 0 ? 'FREE' : `+$${ingredient.price.toFixed(2)}`;
+            // Add safety checks for ingredient properties
+            const name = ingredient.name || 'Unknown Ingredient';
+            const price = ingredient.price !== undefined ? ingredient.price : 0;
+            const protein = ingredient.protein !== undefined ? ingredient.protein : 0;
+            const weight = ingredient.weight !== undefined ? ingredient.weight : 0;
+            
+            const priceText = price === 0 ? 'FREE' : `+$${price.toFixed(2)}`;
             return `
                 <div class="ingredient-item">
-                    <img src="${ingredient.image}" alt="${ingredient.name}" class="ingredient-thumbnail" 
+                    <img src="${ingredient.image || ''}" alt="${name}" class="ingredient-thumbnail" 
                          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%23f8f9fa%22 stroke=%22%23dee2e6%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2220%22>🍽️</text></svg>'">
                     <div class="ingredient-info">
-                        <div class="ingredient-name">${ingredient.name}</div>
+                        <div class="ingredient-name">${name}</div>
                         <div class="ingredient-price">${priceText}</div>
                         <div style="font-size: 0.7em; color: #28a745; font-weight: bold;">
-                            🥩 ${ingredient.protein}g protein • ⚖️ ${ingredient.weight}g
+                            🥩 ${protein.toFixed(1)}g protein • ⚖️ ${weight}g
                         </div>
                     </div>
                 </div>
@@ -455,9 +538,27 @@ Your kebabs will be ready in 15-20 minutes.`);
 
         console.log('🎨 Starting AI image generation...');
 
-        // Get ingredient details
+        // Get ingredient details using enhanced lookup
         const selectedIngredientDetails = kebab.selectedIngredients.map(id => {
-            return this.ingredients.find(ing => ing.id === id);
+            const ingredient = this.ingredients.find(ing => ing.id === id || ing.id === parseInt(id));
+            if (!ingredient) {
+                console.warn('🚫 Ingredient not found for ID:', id, 'Available IDs:', this.ingredients.map(i => i.id));
+                // Create a meaningful fallback ingredient based on common IDs
+                const fallbackNames = {
+                    1: 'Chicken Breast', 2: 'Lamb Meat', 3: 'Beef Strips', 4: 'Lettuce', 5: 'Tomatoes',
+                    6: 'Onions', 7: 'Cucumbers', 8: 'Cheddar Cheese', 9: 'Feta Cheese', 10: 'Hummus'
+                };
+                return {
+                    id: id,
+                    name: fallbackNames[id] || `Ingredient #${id}`,
+                    category: 'unknown',
+                    price: 1.00,
+                    protein: 2.0,
+                    weight: 25,
+                    description: 'Ingredient details not available'
+                };
+            }
+            return ingredient;
         }).filter(ing => ing);
 
         console.log('🧅 Selected ingredient IDs:', kebab.selectedIngredients);
@@ -812,25 +913,25 @@ CRITICAL: The kebab must look substantial and filled, matching the ${measurement
         const measurements = this.getKebabMeasurements(kebab.size);
         
         container.innerHTML = `
-            <div class="ai-generated-image" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div class="ai-generated-image" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)'" onclick="window.cartManager.openImagePopup('${imageData.openKebabImage}', 'Open Kebab - All Ingredients Visible', '${kebab.size} kebab showing all selected ingredients in detail')">
                 <img src="${imageData.openKebabImage}" 
                      alt="Open kebab showing all ingredients" 
-                     style="width: 100%; height: 200px; object-fit: cover;"
-                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=&quot;padding: 40px; text-align: center; background: linear-gradient(135deg, #d4a574 0%, #f4e4bc 100%); color: #8B4513;&quot;><div style=&quot;font-size: 3em; margin-bottom: 10px;&quot;>🥙</div><h5 style=&quot;margin: 0; margin-bottom: 8px;&quot;>SVG Preview Loading...</h5><p style=&quot;margin: 0; font-size: 0.9em; opacity: 0.8;&quot;>Enhanced visualization will appear shortly</p></div>'; setTimeout(() => window.cartManager?.triggerSVGFallback?.(this.closest('.cart-item')), 100);"
-                <div style="padding: 10px; text-align: center;">
+                     style="width: 100%; height: 200px; object-fit: cover; pointer-events: none;"
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=&quot;padding: 40px; text-align: center; background: linear-gradient(135deg, #d4a574 0%, #f4e4bc 100%); color: #8B4513;&quot;><div style=&quot;font-size: 3em; margin-bottom: 10px;&quot;>🥙</div><h5 style=&quot;margin: 0; margin-bottom: 8px;&quot;>SVG Preview Loading...</h5><p style=&quot;margin: 0; font-size: 0.9em; opacity: 0.8;&quot;>Enhanced visualization will appear shortly</p></div>'; setTimeout(() => window.cartManager?.triggerSVGFallback?.(this.closest('.cart-item')), 100);">
+                <div style="padding: 10px; text-align: center; pointer-events: none;">
                     <h5 style="margin: 0; color: #333;">Open Kebab View</h5>
-                    <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #666;">All ingredients visible</p>
+                    <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #666;">All ingredients visible • Click to enlarge</p>
                 </div>
             </div>
-            <div class="ai-generated-image" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div class="ai-generated-image" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)'" onclick="window.cartManager.openImagePopup('${imageData.wrappedKebabImage}', 'Wrapped Kebab with Measurements', 'Complete ${kebab.size} kebab wrapped and ready to serve with precise measurements')">
                 <img src="${imageData.wrappedKebabImage}" 
                      alt="Wrapped kebab with size measurements" 
-                     style="width: 100%; height: 200px; object-fit: cover;"
+                     style="width: 100%; height: 200px; object-fit: cover; pointer-events: none;"
                      onerror="this.parentElement.innerHTML='<div style=&quot;padding: 20px; text-align: center; color: #666;&quot;><div style=&quot;font-size: 2em;&quot;>📏</div><p>Wrapped with Measurements</p><small>Image generation failed</small></div>'">
-                <div style="padding: 10px; text-align: center;">
+                <div style="padding: 10px; text-align: center; pointer-events: none;">
                     <h5 style="margin: 0; color: #333;">Wrapped Kebab</h5>
                     <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #666;">
-                        📏 ${measurements.length}cm × ${measurements.diameter}cm • ⚖️ ${measurements.weight}g
+                        📏 ${measurements.length}cm × ${measurements.diameter}cm • ⚖️ ${measurements.weight}g • Click to enlarge
                     </p>
                 </div>
             </div>
@@ -847,8 +948,11 @@ CRITICAL: The kebab must look substantial and filled, matching the ${measurement
                     <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">Detailed ingredient assembly visualization</p>
                 </div>
                 
-                <div style="display: flex; justify-content: center; margin-bottom: 20px; background: #f8f9fa; border-radius: 10px; padding: 15px;">
+                <div style="display: flex; justify-content: center; margin-bottom: 20px; background: #f8f9fa; border-radius: 10px; padding: 15px; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onclick="window.cartManager.openSVGPopup(\`${svgData.visualization.svg.replace(/`/g, '\\`').replace(/"/g, '\\"')}\`, 'SVG Kebab Visualization', 'Detailed assembly view of ${kebab.size} kebab with all ingredients')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.1)'">
                     ${svgData.visualization.svg}
+                    <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8em; pointer-events: none;">
+                        Click to enlarge
+                    </div>
                 </div>
                 
                 <div style="background: linear-gradient(135deg, #f4e4bc 0%, #d4a574 100%); border-radius: 10px; padding: 15px; color: #333;">
@@ -1021,6 +1125,349 @@ CRITICAL: The kebab must look substantial and filled, matching the ${measurement
             }
         }
     }
+
+    // Image popup functionality
+    openImagePopup(imageUrl, title, description) {
+        console.log('🖼️ Opening image popup:', title);
+        
+        // Remove existing popup if any
+        const existingPopup = document.getElementById('image-popup-modal');
+        if (existingPopup) {
+            existingPopup.remove();
+        }
+
+        // Create popup modal
+        const popup = document.createElement('div');
+        popup.id = 'image-popup-modal';
+        popup.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease-out;
+        `;
+
+        popup.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 15px;
+                max-width: 90vw;
+                max-height: 90vh;
+                overflow: hidden;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                animation: slideIn 0.3s ease-out;
+            ">
+                <div style="
+                    padding: 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                ">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.4em;">${title}</h3>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9em;">${description}</p>
+                    </div>
+                    <button onclick="window.cartManager.closeImagePopup()" style="
+                        background: rgba(255,255,255,0.2);
+                        border: none;
+                        color: white;
+                        font-size: 1.5em;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: background 0.2s ease;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        ×
+                    </button>
+                </div>
+                <div style="
+                    flex: 1;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 20px;
+                    background: #f8f9fa;
+                ">
+                    <img src="${imageUrl}" 
+                         alt="${title}"
+                         style="
+                            max-width: 100%;
+                            max-height: 70vh;
+                            object-fit: contain;
+                            border-radius: 10px;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                         "
+                         onerror="this.parentElement.innerHTML='<div style=&quot;text-align: center; color: #666; padding: 40px;&quot;><div style=&quot;font-size: 4em; margin-bottom: 20px;&quot;>🖼️</div><h4>Image could not be loaded</h4><p>The AI-generated image is not available</p></div>'">
+                </div>
+                <div style="
+                    padding: 15px 20px;
+                    background: white;
+                    border-top: 1px solid #dee2e6;
+                    text-align: center;
+                ">
+                    <button onclick="window.cartManager.downloadImage('${imageUrl}', '${title}')" style="
+                        background: linear-gradient(45deg, #28a745, #20c997);
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        margin-right: 10px;
+                        transition: transform 0.2s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        📥 Download Image
+                    </button>
+                    <button onclick="window.cartManager.closeImagePopup()" style="
+                        background: #6c757d;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        transition: transform 0.2s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideIn {
+                from { transform: scale(0.9) translateY(-20px); opacity: 0; }
+                to { transform: scale(1) translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Close on background click
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) {
+                this.closeImagePopup();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeImagePopup();
+            }
+        });
+
+        document.body.appendChild(popup);
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    closeImagePopup() {
+        const popup = document.getElementById('image-popup-modal');
+        if (popup) {
+            popup.style.animation = 'fadeOut 0.3s ease-out';
+            setTimeout(() => {
+                popup.remove();
+                document.body.style.overflow = ''; // Restore scrolling
+            }, 300);
+        }
+    }
+
+    downloadImage(imageUrl, filename) {
+        try {
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = `${filename.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            console.log('📥 Download initiated for:', filename);
+        } catch (error) {
+            console.error('Download failed:', error);
+            // Fallback: open in new tab
+            window.open(imageUrl, '_blank');
+        }
+    }
+
+    // SVG popup functionality
+    openSVGPopup(svgContent, title, description) {
+        console.log('🖼️ Opening SVG popup:', title);
+        
+        // Remove existing popup if any
+        const existingPopup = document.getElementById('image-popup-modal');
+        if (existingPopup) {
+            existingPopup.remove();
+        }
+
+        // Create popup modal for SVG
+        const popup = document.createElement('div');
+        popup.id = 'image-popup-modal';
+        popup.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease-out;
+        `;
+
+        popup.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 15px;
+                max-width: 90vw;
+                max-height: 90vh;
+                overflow: hidden;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                animation: slideIn 0.3s ease-out;
+            ">
+                <div style="
+                    padding: 20px;
+                    background: linear-gradient(135deg, #d4a574 0%, #f4e4bc 100%);
+                    color: #8B4513;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                ">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.4em;">${title}</h3>
+                        <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 0.9em;">${description}</p>
+                    </div>
+                    <button onclick="window.cartManager.closeImagePopup()" style="
+                        background: rgba(139,69,19,0.2);
+                        border: none;
+                        color: #8B4513;
+                        font-size: 1.5em;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: background 0.2s ease;
+                    " onmouseover="this.style.background='rgba(139,69,19,0.3)'" onmouseout="this.style.background='rgba(139,69,19,0.2)'">
+                        ×
+                    </button>
+                </div>
+                <div style="
+                    flex: 1;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 40px;
+                    background: #f8f9fa;
+                    min-height: 400px;
+                ">
+                    <div style="
+                        max-width: 100%;
+                        max-height: 100%;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        background: white;
+                        padding: 20px;
+                        border-radius: 15px;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                    ">
+                        ${svgContent}
+                    </div>
+                </div>
+                <div style="
+                    padding: 15px 20px;
+                    background: white;
+                    border-top: 1px solid #dee2e6;
+                    text-align: center;
+                ">
+                    <button onclick="window.cartManager.downloadSVG(\`${svgContent.replace(/`/g, '\\`').replace(/"/g, '\\"')}\`, '${title}')" style="
+                        background: linear-gradient(45deg, #28a745, #20c997);
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        margin-right: 10px;
+                        transition: transform 0.2s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        📥 Download SVG
+                    </button>
+                    <button onclick="window.cartManager.closeImagePopup()" style="
+                        background: #6c757d;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        transition: transform 0.2s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Close on background click
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) {
+                this.closeImagePopup();
+            }
+        });
+
+        document.body.appendChild(popup);
+        document.body.style.overflow = 'hidden';
+    }
+
+    downloadSVG(svgContent, filename) {
+        try {
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${filename.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.svg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            console.log('📥 SVG download initiated for:', filename);
+        } catch (error) {
+            console.error('SVG download failed:', error);
+        }
+    }
 }
 
 // Global instance for onclick handlers
@@ -1044,6 +1491,19 @@ window.showCartContents = function() {
     const cart = JSON.parse(localStorage.getItem('kebabCart') || '[]');
     console.log('🛒 Current cart contents:', cart);
     console.log('🛒 Cart length:', cart.length);
+    
+    // Show detailed structure
+    cart.forEach((item, index) => {
+        console.log(`Cart item ${index}:`, {
+            size: item.size,
+            selectedIngredients: item.selectedIngredients,
+            pricing: item.pricing,
+            hasRequiredFields: !!(item.selectedIngredients && item.pricing)
+        });
+    });
+    
+    // Also show in alert for easy viewing
+    alert(`Cart has ${cart.length} items. Check console for details.`);
     return cart;
 };
 
@@ -1088,6 +1548,48 @@ window.refreshCartDisplay = function() {
     } else {
         console.error('❌ Cart manager not initialized');
     }
+};
+
+// Force show cart items with minimal rendering
+window.forceShowCartItems = function() {
+    const cartItems = JSON.parse(localStorage.getItem('kebabCart') || '[]');
+    const container = document.getElementById('cartItems');
+    
+    if (!container) {
+        alert('Cart container not found!');
+        return;
+    }
+    
+    if (cartItems.length === 0) {
+        alert('No items in cart!');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    cartItems.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.style.cssText = 'border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: white;';
+        
+        div.innerHTML = `
+            <h3>🥙 Kebab #${index + 1}</h3>
+            <p><strong>Size:</strong> ${item.size || 'Unknown'}</p>
+            <p><strong>Ingredients:</strong> ${item.selectedIngredients ? item.selectedIngredients.length : 0} items</p>
+            <p><strong>Price:</strong> $${item.pricing ? item.pricing.total.toFixed(2) : '0.00'}</p>
+            <button onclick="cartManager.removeFromCart(${index})" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                Remove
+            </button>
+        `;
+        
+        container.appendChild(div);
+    });
+    
+    // Show the cart content
+    document.getElementById('emptyCart').style.display = 'none';
+    document.getElementById('cartContentContainer').style.display = 'block';
+    
+    alert(`Forced display of ${cartItems.length} cart items!`);
 };
 
 // Global function to force SVG preview (bypass AI)
