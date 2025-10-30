@@ -319,6 +319,53 @@
             transform: none;
         }
 
+        .ai-generate-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-generate-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+        }
+
+        .ai-generate-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ai-generate-button.loading {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .ai-generate-button.loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: aiLoading 1.5s linear infinite;
+        }
+
+        @keyframes aiLoading {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
         .popular-combos {
             grid-column: 1 / -1;
             margin-top: 20px;
@@ -436,16 +483,41 @@
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                border-radius: 10px;
+            }
+
+            .header {
+                padding: 20px 15px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
             .builder-container {
                 grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px 15px;
             }
             
             .ingredients-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 15px;
             }
             
             .size-options {
                 flex-direction: column;
+                gap: 10px;
+            }
+
+            .size-option {
+                width: 100%;
+                text-align: center;
             }
 
             .back-button {
@@ -453,6 +525,73 @@
                 transform: none;
                 margin-bottom: 15px;
                 display: inline-block;
+            }
+
+            .ingredient-item {
+                padding: 12px;
+            }
+
+            .ingredient-item h4 {
+                font-size: 0.9rem;
+            }
+
+            .ingredient-item p {
+                font-size: 0.8rem;
+            }
+
+            .nav-button {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+
+            .header {
+                padding: 15px 10px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .builder-container {
+                padding: 15px 10px;
+                gap: 15px;
+            }
+
+            .ingredients-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .ingredient-item {
+                padding: 10px;
+            }
+
+            .ingredient-item h4 {
+                font-size: 0.85rem;
+            }
+
+            .ingredient-item p {
+                font-size: 0.75rem;
+            }
+
+            .size-option {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+
+            .navigation {
+                padding: 10px;
+            }
+
+            .nav-button {
+                padding: 8px 12px;
+                font-size: 0.85rem;
             }
         }
     </style>
@@ -538,6 +677,10 @@
                     </div>
                 </div>
 
+                <button class="ai-generate-button" id="aiGenerateButton" disabled>
+                    🎨 Generate AI Images - FREE
+                </button>
+                
                 <button class="order-button" id="orderButton" disabled>
                     Add to Cart - $0.00
                 </button>

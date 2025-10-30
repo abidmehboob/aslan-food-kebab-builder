@@ -25,7 +25,8 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       connectSrc: ["'self'"]
     }
   },
@@ -42,12 +43,16 @@ app.use(requestLogger);
 app.use('/api/', apiRateLimit);
 app.use(generalRateLimit);
 
-// CORS configuration
-app.use(cors({
-  origin: config.cors.origins,
+// CORS configuration - Allow all origins in production for Render.com
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' ? true : config.cors.origins,
   credentials: config.cors.credentials,
-  optionsSuccessStatus: 200
-}));
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+};
+
+app.use(cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ 
@@ -189,6 +194,8 @@ const startServer = async () => {
 };
 
 // Start the application
-startServer();
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;

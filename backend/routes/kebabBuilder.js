@@ -278,7 +278,7 @@ router.get('/popular', (req, res) => {
 // AI Image Generation endpoint
 router.post('/generate-images', async (req, res) => {
   try {
-    const { openKebabPrompt, wrappedKebabPrompt, kebabData } = req.body;
+    const { openKebabPrompt, wrappedKebabPrompt, kebabData, openKebabPromptCompact, wrappedKebabPromptCompact } = req.body;
 
     // Validate input
     if (!openKebabPrompt || !wrappedKebabPrompt || !kebabData) {
@@ -299,8 +299,12 @@ router.post('/generate-images', async (req, res) => {
     // Simulate AI image generation delay
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Generate images
-    const generatedImages = await generateKebabImages(openKebabPrompt, wrappedKebabPrompt, kebabData);
+    // Generate images with both detailed and compact prompts
+    const requestData = {
+      openKebabPromptCompact,
+      wrappedKebabPromptCompact
+    };
+    const generatedImages = await generateKebabImages(openKebabPrompt, wrappedKebabPrompt, kebabData, requestData);
 
     res.json({
       success: true,
@@ -327,18 +331,279 @@ router.post('/generate-images', async (req, res) => {
 });
 
 /**
- * Generate kebab images using SVG placeholders
- * In production, replace with actual AI service calls
+ * Generate kebab images using FREE AI services
+ * Multiple free options with fallbacks
  */
-async function generateKebabImages(openPrompt, wrappedPrompt, kebabData) {
+async function generateKebabImages(openPrompt, wrappedPrompt, kebabData, requestData = {}) {
+  try {
+    // Try multiple free AI services in order of preference
+    const services = [
+      'huggingface-free',
+      'pollinations-free', 
+      'craiyon-free',
+      'svg-fallback'
+    ];
+
+    for (const service of services) {
+      try {
+        const result = await generateWithService(service, openPrompt, wrappedPrompt, kebabData, requestData);
+        if (result) {
+          return result;
+        }
+      } catch (error) {
+        console.log(`❌ Service ${service} failed:`, error.message);
+        
+        // Handle rate limiting specifically
+        if (error.message.includes('rate limit') || error.message.includes('Too many requests')) {
+          console.log(`⏰ Rate limited on ${service}, trying next service...`);
+        }
+        continue;
+      }
+    }
+
+    // Fallback to high-quality SVG if all services fail
+    return generateSVGFallback(kebabData);
+
+  } catch (error) {
+    console.error('All AI services failed, using SVG fallback:', error);
+    return generateSVGFallback(kebabData);
+  }
+}
+
+/**
+ * Generate images with specific free AI service
+ */
+async function generateWithService(service, openPrompt, wrappedPrompt, kebabData, requestData = {}) {
+  switch (service) {
+    case 'huggingface-free':
+      return await generateWithHuggingFace(openPrompt, wrappedPrompt, kebabData);
+    
+    case 'pollinations-free':
+      return await generateWithPollinations(openPrompt, wrappedPrompt, kebabData, requestData);
+    
+    case 'craiyon-free':
+      return await generateWithCraiyon(openPrompt, wrappedPrompt, kebabData);
+    
+    case 'svg-fallback':
+      return generateSVGFallback(kebabData);
+    
+    default:
+      throw new Error(`Unknown service: ${service}`);
+  }
+}
+
+/**
+ * FREE Hugging Face Inference API (No API key needed for some models)
+ */
+async function generateWithHuggingFace(openPrompt, wrappedPrompt, kebabData) {
+  try {
+    const baseUrl = 'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5';
+    
+    // Generate open kebab image
+    let openImageUrl;
+    try {
+      const openResponse = await fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: openPrompt,
+          parameters: {
+            negative_prompt: "blurry, low quality, distorted",
+            num_inference_steps: 20,
+            guidance_scale: 7.5
+          }
+        }),
+        timeout: 30000
+      });
+
+      if (openResponse.ok) {
+        const openBlob = await openResponse.arrayBuffer();
+        openImageUrl = `data:image/jpeg;base64,${Buffer.from(openBlob).toString('base64')}`;
+      }
+    } catch (error) {
+      console.log('HuggingFace open image failed:', error.message);
+    }
+
+    // Generate wrapped kebab image
+    let wrappedImageUrl;
+    try {
+      const wrappedResponse = await fetch(baseUrl, {
+        method: 'POST', 
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: wrappedPrompt,
+          parameters: {
+            negative_prompt: "blurry, low quality, distorted",
+            num_inference_steps: 20,
+            guidance_scale: 7.5
+          }
+        }),
+        timeout: 30000
+      });
+
+      if (wrappedResponse.ok) {
+        const wrappedBlob = await wrappedResponse.arrayBuffer();
+        wrappedImageUrl = `data:image/jpeg;base64,${Buffer.from(wrappedBlob).toString('base64')}`;
+      }
+    } catch (error) {
+      console.log('HuggingFace wrapped image failed:', error.message);
+    }
+
+    // Return if at least one image was generated
+    if (openImageUrl || wrappedImageUrl) {
+      return {
+        openKebabImage: openImageUrl || generatePlaceholderImageUrl('open-kebab', kebabData),
+        wrappedKebabImage: wrappedImageUrl || generatePlaceholderImageUrl('wrapped-kebab', kebabData),
+        metadata: {
+          generationTime: '15-30s',
+          model: 'stable-diffusion-v1-5',
+          resolution: '512x512',
+          style: 'AI-generated',
+          service: 'HuggingFace (Free)',
+          cost: '$0.00'
+        }
+      };
+    }
+
+    throw new Error('No images generated');
+  } catch (error) {
+    throw new Error(`HuggingFace generation failed: ${error.message}`);
+  }
+}
+
+/**
+ * FREE Pollinations.ai API (Completely free, no registration)
+ */
+async function generateWithPollinations(openPrompt, wrappedPrompt, kebabData, requestData = {}) {
+  try {
+    const baseUrl = 'https://image.pollinations.ai/prompt';
+    
+    // Use compact prompts if available, otherwise use the provided prompts
+    const openPromptToUse = requestData.openKebabPromptCompact || openPrompt;
+    const wrappedPromptToUse = requestData.wrappedKebabPromptCompact || wrappedPrompt;
+    
+    console.log('🤖 Pollinations AI prompt length:', {
+      open: openPromptToUse.length,
+      wrapped: wrappedPromptToUse.length,
+      ingredients: kebabData.ingredientDetails?.map(i => i.name).join(', ') || 'not specified'
+    });
+    
+    // Clean prompts for URL encoding (Pollinations supports longer prompts)
+    const cleanOpenPrompt = encodeURIComponent(openPromptToUse.slice(0, 1000));
+    const cleanWrappedPrompt = encodeURIComponent(wrappedPromptToUse.slice(0, 800));
+    
+    // Generate URLs (Pollinations generates images via GET requests)
+    const openImageUrl = `${baseUrl}/${cleanOpenPrompt}?width=512&height=512&model=flux&seed=${Math.floor(Math.random() * 10000)}`;
+    const wrappedImageUrl = `${baseUrl}/${cleanWrappedPrompt}?width=512&height=512&model=flux&seed=${Math.floor(Math.random() * 10000)}`;
+
+    // Test if URLs are accessible and handle rate limiting
+    try {
+      const testResponse = await fetch(openImageUrl, { method: 'HEAD', timeout: 10000 });
+      if (!testResponse.ok) {
+        if (testResponse.status === 429) {
+          throw new Error('Too many requests from this IP, please try again later.');
+        }
+        throw new Error(`Service unavailable (${testResponse.status})`);
+      }
+    } catch (error) {
+      if (error.message.includes('Too many requests')) {
+        throw new Error('Pollinations.ai rate limited - too many requests');
+      }
+      throw new Error(`Pollinations service test failed: ${error.message}`);
+    }
+
+    return {
+      openKebabImage: openImageUrl,
+      wrappedKebabImage: wrappedImageUrl,
+      metadata: {
+        generationTime: '5-10s',
+        model: 'Flux (Pollinations)',
+        resolution: '512x512',
+        style: 'AI-generated',
+        service: 'Pollinations.ai (Free)',
+        cost: '$0.00'
+      }
+    };
+  } catch (error) {
+    throw new Error(`Pollinations generation failed: ${error.message}`);
+  }
+}
+
+/**
+ * FREE Craiyon API (formerly DALL-E mini)
+ */
+async function generateWithCraiyon(openPrompt, wrappedPrompt, kebabData) {
+  try {
+    const baseUrl = 'https://api.craiyon.com/v3';
+    
+    // Generate open kebab image
+    const openResponse = await fetch(`${baseUrl}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: openPrompt.slice(0, 300), // Craiyon improved prompt length
+        model: 'art',
+        negative_prompt: 'blurry, low quality'
+      }),
+      timeout: 60000 // Craiyon can take longer
+    });
+
+    if (!openResponse.ok) {
+      throw new Error('Craiyon API request failed');
+    }
+
+    const openData = await openResponse.json();
+    
+    // Craiyon returns base64 images
+    const openImageUrl = openData.images && openData.images[0] 
+      ? `data:image/jpeg;base64,${openData.images[0]}`
+      : null;
+
+    // For demo purposes, use same image for wrapped (to avoid double API calls)
+    const wrappedImageUrl = openImageUrl;
+
+    if (openImageUrl) {
+      return {
+        openKebabImage: openImageUrl,
+        wrappedKebabImage: wrappedImageUrl,
+        metadata: {
+          generationTime: '30-60s',
+          model: 'Craiyon v3',
+          resolution: '512x512',
+          style: 'AI-generated',
+          service: 'Craiyon (Free)',
+          cost: '$0.00'
+        }
+      };
+    }
+
+    throw new Error('No images returned from Craiyon');
+  } catch (error) {
+    throw new Error(`Craiyon generation failed: ${error.message}`);
+  }
+}
+
+/**
+ * High-quality SVG fallback when all AI services fail
+ */
+function generateSVGFallback(kebabData) {
   return {
     openKebabImage: generatePlaceholderImageUrl('open-kebab', kebabData),
     wrappedKebabImage: generatePlaceholderImageUrl('wrapped-kebab', kebabData),
     metadata: {
-      generationTime: '3.2s',
-      model: 'demo-placeholder',
+      generationTime: '0.1s',
+      model: 'SVG-Generator',
       resolution: '512x512',
-      style: 'food-photography'
+      style: 'Vector-Art',
+      service: 'Local SVG (Free)',
+      cost: '$0.00',
+      note: 'High-quality vector graphics used as fallback'
     }
   };
 }

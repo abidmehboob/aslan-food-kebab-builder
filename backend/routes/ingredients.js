@@ -312,48 +312,116 @@ function getExtraCoverage(size) {
 }
 
 function generateKebabSVG(size, sizeInfo, ingredients) {
-  const width = Math.min(400, sizeInfo.length * 15);
-  const height = Math.min(200, sizeInfo.width * 25);
+  const width = Math.min(450, sizeInfo.length * 18);
+  const height = Math.min(300, sizeInfo.width * 30);
   
   let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
   
-  // Background (plate)
-  svg += `<ellipse cx="${width/2}" cy="${height-10}" rx="${width/2-10}" ry="15" fill="#E6E6FA" stroke="#D3D3D3" stroke-width="2"/>`;
+  // Add gradient definitions
+  svg += `<defs>
+    <linearGradient id="plateGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F5F5F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E0E0E0;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="3" stdDeviation="2" flood-opacity="0.3"/>
+    </filter>
+  </defs>`;
   
-  // Tortilla base
+  // Background (plate)
+  svg += `<ellipse cx="${width/2}" cy="${height-15}" rx="${width/2-10}" ry="20" fill="url(#plateGradient)" stroke="#D3D3D3" stroke-width="2" filter="url(#shadow)"/>`;
+  
+  // Tortilla base (opened flat)
   const tortilla = ingredients.find(ing => ing.category === 'tortilla');
   const tortillaColor = getTortillaColor(tortilla);
-  svg += `<ellipse cx="${width/2}" cy="${height/2}" rx="${width/2-20}" ry="${height/2-20}" fill="${tortillaColor}" stroke="#D2B48C" stroke-width="1"/>`;
+  svg += `<ellipse cx="${width/2}" cy="${height/2+10}" rx="${width/2-30}" ry="${height/2-40}" fill="${tortillaColor}" stroke="#D2B48C" stroke-width="2" filter="url(#shadow)"/>`;
   
-  // Add ingredients layers
-  let layerY = height/2;
+  // Create organized ingredient layers
+  const centerX = width/2;
+  const centerY = height/2;
+  let currentLayer = 0;
   
-  // Proteins
+  // Proteins - Center layer (main filling)
   const proteins = ingredients.filter(ing => ing.category === 'protein');
-  proteins.forEach((protein, index) => {
-    const color = getProteinColor(protein);
-    const offsetX = (index - proteins.length/2) * 20;
-    svg += `<ellipse cx="${width/2 + offsetX}" cy="${layerY - 5}" rx="${width/3}" ry="12" fill="${color}" opacity="0.8"/>`;
-  });
+  if (proteins.length > 0) {
+    proteins.forEach((protein, index) => {
+      const color = getProteinColor(protein);
+      const angle = (index * 60) * Math.PI / 180; // Spread proteins in circular pattern
+      const offsetX = Math.cos(angle) * 40;
+      const offsetY = Math.sin(angle) * 20;
+      svg += `<ellipse cx="${centerX + offsetX}" cy="${centerY + offsetY}" rx="35" ry="15" fill="${color}" stroke="${color}" stroke-width="1" opacity="0.85" filter="url(#shadow)"/>`;
+      // Add text label
+      svg += `<text x="${centerX + offsetX}" y="${centerY + offsetY + 5}" font-family="Arial" font-size="8" fill="white" text-anchor="middle" font-weight="bold">${protein.name.split(' ')[0]}</text>`;
+    });
+    currentLayer++;
+  }
   
-  // Vegetables
+  // Vegetables - Arranged around proteins
   const vegetables = ingredients.filter(ing => ing.category === 'vegetables');
-  vegetables.forEach((veg, index) => {
-    const color = getVegetableColor(veg);
-    const offsetX = (index - vegetables.length/2) * 15;
-    svg += `<circle cx="${width/2 + offsetX}" cy="${layerY - 10}" r="8" fill="${color}" opacity="0.7"/>`;
-  });
+  if (vegetables.length > 0) {
+    vegetables.forEach((veg, index) => {
+      const color = getVegetableColor(veg);
+      const angle = (index * (360 / vegetables.length)) * Math.PI / 180;
+      const radius = 80 + (currentLayer * 10);
+      const offsetX = Math.cos(angle) * radius;
+      const offsetY = Math.sin(angle) * (radius * 0.6);
+      
+      // Different shapes for different vegetables
+      if (veg.name.includes('Tomato')) {
+        svg += `<circle cx="${centerX + offsetX}" cy="${centerY + offsetY}" r="12" fill="${color}" stroke="${color}" stroke-width="1" opacity="0.8" filter="url(#shadow)"/>`;
+      } else if (veg.name.includes('Lettuce')) {
+        svg += `<path d="M ${centerX + offsetX - 15} ${centerY + offsetY} Q ${centerX + offsetX} ${centerY + offsetY - 10} ${centerX + offsetX + 15} ${centerY + offsetY} Q ${centerX + offsetX} ${centerY + offsetY + 10} ${centerX + offsetX - 15} ${centerY + offsetY}" fill="${color}" opacity="0.7" filter="url(#shadow)"/>`;
+      } else {
+        svg += `<ellipse cx="${centerX + offsetX}" cy="${centerY + offsetY}" rx="10" ry="8" fill="${color}" stroke="${color}" stroke-width="1" opacity="0.75" filter="url(#shadow)"/>`;
+      }
+      
+      // Add text label for vegetables
+      svg += `<text x="${centerX + offsetX}" y="${centerY + offsetY + 25}" font-family="Arial" font-size="7" fill="#333" text-anchor="middle">${veg.name.split(' ')[1] || veg.name.split(' ')[0]}</text>`;
+    });
+    currentLayer++;
+  }
   
-  // Sauces (drizzled pattern)
+  // Sauces - Beautiful drizzle patterns
   const sauces = ingredients.filter(ing => ing.category === 'sauces');
   sauces.forEach((sauce, index) => {
     const color = getSauceColor(sauce);
-    const y = layerY - 15 - (index * 3);
-    svg += `<path d="M ${width/4} ${y} Q ${width/2} ${y-5} ${3*width/4} ${y}" stroke="${color}" stroke-width="3" fill="none" opacity="0.6"/>`;
+    const y = centerY - 30 - (index * 8);
+    
+    // Create artistic drizzle pattern
+    svg += `<path d="M ${width/4} ${y} Q ${centerX - 20} ${y - 8} ${centerX} ${y} Q ${centerX + 20} ${y + 8} ${3*width/4} ${y}" stroke="${color}" stroke-width="4" fill="none" opacity="0.7" stroke-linecap="round"/>`;
+    svg += `<path d="M ${width/3} ${y + 5} Q ${centerX} ${y - 3} ${2*width/3} ${y + 5}" stroke="${color}" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>`;
+    
+    // Add sauce label
+    svg += `<text x="${width - 50}" y="${y + 5}" font-family="Arial" font-size="7" fill="${color}" font-weight="bold">${sauce.name.split(' ')[0]}</text>`;
   });
   
-  // Size indicator
-  svg += `<text x="10" y="20" font-family="Arial" font-size="12" fill="#333">${size.toUpperCase()} - ${sizeInfo.length}cm</text>`;
+  // Extras - Special toppings
+  const extras = ingredients.filter(ing => ing.category === 'extras');
+  extras.forEach((extra, index) => {
+    const color = getExtraColor(extra);
+    const x = centerX + (index - extras.length/2) * 50;
+    const y = centerY - 40;
+    
+    if (extra.name.includes('Cheese')) {
+      svg += `<rect x="${x-8}" y="${y-6}" width="16" height="12" rx="2" fill="${color}" opacity="0.8" filter="url(#shadow)"/>`;
+    } else if (extra.name.includes('Fries')) {
+      svg += `<rect x="${x-3}" y="${y-8}" width="6" height="16" rx="1" fill="${color}" opacity="0.8" filter="url(#shadow)"/>`;
+      svg += `<rect x="${x-8}" y="${y-5}" width="6" height="10" rx="1" fill="${color}" opacity="0.7" filter="url(#shadow)"/>`;
+      svg += `<rect x="${x+2}" y="${y-6}" width="6" height="12" rx="1" fill="${color}" opacity="0.7" filter="url(#shadow)"/>`;
+    } else {
+      svg += `<circle cx="${x}" cy="${y}" r="8" fill="${color}" stroke="${color}" stroke-width="1" opacity="0.8" filter="url(#shadow)"/>`;
+    }
+    
+    // Add extra label
+    svg += `<text x="${x}" y="${y + 20}" font-family="Arial" font-size="7" fill="#333" text-anchor="middle" font-weight="bold">${extra.name.split(' ')[0]}</text>`;
+  });
+  
+  // Title and size indicator
+  svg += `<rect x="0" y="0" width="${width}" height="25" fill="rgba(255,255,255,0.9)" stroke="none"/>`;
+  svg += `<text x="10" y="18" font-family="Arial" font-size="14" fill="#333" font-weight="bold">🥙 ${size.toUpperCase()} KEBAB - ${sizeInfo.length}cm × ${sizeInfo.width}cm</text>`;
+  
+  // Assembly instruction
+  svg += `<text x="${width/2}" y="${height - 5}" font-family="Arial" font-size="10" fill="#666" text-anchor="middle" font-style="italic">Open kebab view showing all ingredients in assembly order</text>`;
   
   svg += '</svg>';
   return svg;

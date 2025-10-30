@@ -3,7 +3,12 @@ services:
     name: aslan-food-kebab-builder
     env: node
     plan: free
-    buildCommand: cd backend && npm install
+    buildCommand: |
+      echo "Installing backend dependencies..."
+      cd backend && npm install --production
+      echo "Creating required directories..."
+      mkdir -p logs uploads
+      echo "Build complete!"
     startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
@@ -14,11 +19,17 @@ services:
         value: /api
       - key: API_VERSION
         value: v1
+      - key: LOG_LEVEL
+        value: info
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      - key: REQUEST_TIMEOUT
+        value: 30000
+      - key: KEEP_ALIVE_TIMEOUT
+        value: 5000
       # MongoDB is optional - kebab builder works with static data
       # - key: MONGODB_URI
       #   value: your-mongodb-connection-string
     healthCheckPath: /api/health
-    disk:
-      name: aslan-food-disk
-      mountPath: /opt/render/project/logs
-      sizeGB: 1

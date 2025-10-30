@@ -346,6 +346,9 @@ class KebabBuilder {
         const orderButton = document.getElementById('orderButton');
         orderButton.textContent = `Add to Cart - $${priceData.totalPrice.toFixed(2)}`;
         orderButton.disabled = false;
+        
+        const aiGenerateButton = document.getElementById('aiGenerateButton');
+        aiGenerateButton.disabled = false;
     }
 
     resetPriceDisplay() {
@@ -362,6 +365,9 @@ class KebabBuilder {
         orderButton.textContent = 'Add to Cart - $0.00';
         orderButton.disabled = true;
         
+        const aiGenerateButton = document.getElementById('aiGenerateButton');
+        aiGenerateButton.disabled = true;
+        
         this.updateKebabPreview([]);
     }
 
@@ -376,14 +382,14 @@ class KebabBuilder {
         }
 
         try {
-            const response = await fetch('/api/ingredients/preview', {
+            const response = await fetch(`${this.apiBaseUrl}/v1/ingredients/preview`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     size: this.selectedSize,
-                    ingredients: this.selectedIngredients
+                    selectedIngredients: this.selectedIngredients
                 })
             });
 
@@ -561,6 +567,10 @@ class KebabBuilder {
         document.getElementById('orderButton').addEventListener('click', () => {
             this.placeOrder();
         });
+        
+        document.getElementById('aiGenerateButton').addEventListener('click', () => {
+            this.generateAIImages();
+        });
     }
 
     hideLoading() {
@@ -591,6 +601,120 @@ class KebabBuilder {
             // Other production environments - use same domain
             return `${protocol}//${hostname}/api`;
         }
+    }
+
+    async generateAIImages() {
+        if (!this.selectedSize || this.selectedIngredients.length === 0) {
+            alert('Please select a size and at least one ingredient before generating AI images.');
+            return;
+        }
+
+        const button = document.getElementById('aiGenerateButton');
+        const originalText = button.textContent;
+        
+        // Show loading state
+        button.disabled = true;
+        button.classList.add('loading');
+        button.textContent = '🎨 Generating FREE AI Images...';
+
+        try {
+            // Create prompts based on selected ingredients
+            const ingredientNames = this.selectedIngredients.map(id => {
+                const ingredient = this.ingredients.find(ing => ing.id === id);
+                return ingredient ? ingredient.name : '';
+            }).filter(name => name);
+
+            const openKebabPrompt = `delicious ${this.selectedSize} Turkish kebab with ${ingredientNames.join(', ')}, professional food photography, high quality, appetizing`;
+            const wrappedKebabPrompt = `wrapped ${this.selectedSize} Turkish kebab in lavash bread with ${ingredientNames.join(', ')}, professional food photography`;
+
+            // Calculate measurements
+            const baseMeasurements = {
+                small: { meat: 150, vegetables: 80, bread: 80 },
+                medium: { meat: 200, vegetables: 100, bread: 100 },
+                large: { meat: 250, vegetables: 150, bread: 120 }
+            };
+
+            const measurements = baseMeasurements[this.selectedSize] || baseMeasurements.medium;
+
+            const requestData = {
+                openKebabPrompt,
+                wrappedKebabPrompt,
+                kebabData: {
+                    size: this.selectedSize,
+                    ingredients: ingredientNames,
+                    measurements
+                }
+            };
+
+            console.log('🎨 Generating AI images with data:', requestData);
+
+            const response = await fetch(`${this.apiBaseUrl}/v1/kebab-builder/generate-images`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.displayAIImages(data.data);
+                button.textContent = '✅ AI Images Generated - FREE!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.classList.remove('loading');
+                }, 3000);
+            } else {
+                throw new Error(data.message || 'Failed to generate AI images');
+            }
+
+        } catch (error) {
+            console.error('Error generating AI images:', error);
+            alert(`Failed to generate AI images: ${error.message}`);
+            button.textContent = originalText;
+            button.disabled = false;
+            button.classList.remove('loading');
+        }
+    }
+
+    displayAIImages(imageData) {
+        const previewContainer = document.getElementById('kebabPreview');
+        if (!previewContainer) return;
+
+        const aiImagesHtml = `
+            <div style="margin-top: 20px;">
+                <h4 style="text-align: center; color: #2ecc71; margin-bottom: 15px;">
+                    🎨 AI Generated Images (100% FREE)
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div style="text-align: center;">
+                        <h5 style="margin: 0 0 8px 0; color: #333;">Open Kebab</h5>
+                        <img src="${imageData.openKebabImage}" alt="AI Generated Open Kebab" 
+                             style="width: 100%; max-width: 200px; height: 150px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
+                             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22><rect width=%22200%22 height=%22150%22 fill=%22%23f0f0f0%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23999%22>Loading...</text></svg>'">
+                    </div>
+                    <div style="text-align: center;">
+                        <h5 style="margin: 0 0 8px 0; color: #333;">Wrapped Kebab</h5>
+                        <img src="${imageData.wrappedKebabImage}" alt="AI Generated Wrapped Kebab" 
+                             style="width: 100%; max-width: 200px; height: 150px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
+                             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22><rect width=%22200%22 height=%22150%22 fill=%22%23f0f0f0%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23999%22>Loading...</text></svg>'">
+                    </div>
+                </div>
+                <div style="background: #e8f5e8; padding: 10px; border-radius: 8px; text-align: center; font-size: 0.9em;">
+                    <p style="margin: 0; color: #2ecc71; font-weight: bold;">💰 Cost: $0.00 - Completely FREE!</p>
+                    <p style="margin: 5px 0 0 0; color: #666;">Generated using free AI services</p>
+                </div>
+            </div>
+        `;
+
+        // Append AI images to existing preview
+        previewContainer.innerHTML += aiImagesHtml;
     }
 }
 

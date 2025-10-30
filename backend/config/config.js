@@ -4,7 +4,7 @@ const config = {
   // Environment
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT, 10) || 3000,
-  HOST: process.env.HOST || '0.0.0.0',
+  HOST: process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'),
   
   // Database
   database: {
@@ -32,7 +32,9 @@ const config = {
   cors: {
     origins: process.env.ALLOWED_ORIGINS ? 
       process.env.ALLOWED_ORIGINS.split(',') : 
-      ['http://localhost:3000', 'http://localhost:5000'],
+      process.env.NODE_ENV === 'production' ? 
+        ['https://*.onrender.com'] : 
+        ['http://localhost:3000', 'http://localhost:5000'],
     credentials: true
   },
   

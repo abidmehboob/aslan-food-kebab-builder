@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aslan Food - Test Page</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 10px;
+            min-width: 200px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+        .navigation {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .nav-link {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 5px;
+            font-weight: 600;
+        }
+        .nav-link:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        .feature-check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .check-icon {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .responsive-test {
+            border: 2px dashed #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            text-align: center;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            .test-button {
+                width: 100%;
+                margin: 5px 0;
+            }
+            .responsive-test {
+                background: linear-gradient(135deg, #e8f5e8 0%, #fff3cd 100%);
+                border-color: #28a745;
+            }
+            .responsive-test::before {
+                content: "📱 MOBILE VIEW ";
+                font-weight: bold;
+                color: #28a745;
+            }
+        }
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+                margin: 5px;
+            }
+            .responsive-test {
+                background: linear-gradient(135deg, #f8d7da 0%, #d1ecf1 100%);
+                border-color: #dc3545;
+            }
+            .responsive-test::before {
+                content: "📱 SMALL MOBILE VIEW ";
+                color: #dc3545;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🥙 Aslan Food - System Test</h1>
+        
+        <div class="responsive-test">
+            <h3>📱 Responsive Design Test</h3>
+            <p>This box changes color based on screen size:</p>
+            <ul style="text-align: left; max-width: 300px; margin: 0 auto;">
+                <li><strong>Desktop:</strong> Blue gradient</li>
+                <li><strong>Tablet (≤768px):</strong> Green gradient</li>
+                <li><strong>Mobile (≤480px):</strong> Red gradient</li>
+            </ul>
+        </div>
+
+        <div class="status">
+            <h3>✅ Features Status</h3>
+            <div class="feature-check">
+                <span class="check-icon">✅</span>
+                <span>Responsive Design Enhanced</span>
+            </div>
+            <div class="feature-check">
+                <span class="check-icon">✅</span>
+                <span>Image Generation Button Styled</span>
+            </div>
+            <div class="feature-check">
+                <span class="check-icon">✅</span>
+                <span>Mobile-First CSS Applied</span>
+            </div>
+            <div class="feature-check">
+                <span class="check-icon">✅</span>
+                <span>Button Visibility Improved</span>
+            </div>
+        </div>
+
+        <div class="navigation">
+            <h3>🧭 Navigation Test</h3>
+            <a href="index.html" class="nav-link">🏠 Home</a>
+            <a href="kebab-builder.html" class="nav-link">🔧 Kebab Builder</a>
+            <a href="cart.html" class="nav-link">🛒 Cart</a>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <h3>🧪 Quick Tests</h3>
+            <button class="test-button" onclick="testAddKebab()">
+                🥙 Add Test Kebab to Cart
+            </button>
+            <br>
+            <button class="test-button" onclick="testImageGeneration()">
+                🎨 Test Image Generation Button
+            </button>
+            <br>
+            <button class="test-button" onclick="window.location.href='cart.html'">
+                🛒 Go to Cart Page
+            </button>
+        </div>
+
+        <div class="status">
+            <h3>📋 Instructions</h3>
+            <ol style="text-align: left;">
+                <li><strong>Test Responsive Design:</strong> Resize your browser window or use mobile device</li>
+                <li><strong>Add Test Kebab:</strong> Click the "Add Test Kebab" button above</li>
+                <li><strong>Check Generate Button:</strong> Go to cart and look for "🎨 Generate AI Images" button</li>
+                <li><strong>Mobile Test:</strong> Open on mobile device to verify responsiveness</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function testAddKebab() {
+            // Add a test kebab to localStorage
+            const testKebab = {
+                id: Date.now(),
+                size: 'large',
+                selectedIngredients: [21, 1, 2, 5, 6, 7, 11, 13, 16, 18],
+                pricing: { base: 9.00, ingredients: 8.35, total: 17.35 },
+                protein: 45.2,
+                weight: 625,
+                timestamp: Date.now()
+            };
+            
+            const cart = JSON.parse(localStorage.getItem('kebabCart') || '[]');
+            cart.push(testKebab);
+            localStorage.setItem('kebabCart', JSON.stringify(cart));
+            
+            alert('✅ Test kebab added to cart! Go to cart page to see the "Generate AI Images" button.');
+        }
+
+        function testImageGeneration() {
+            alert('🎨 The image generation button should appear in the cart when you have kebabs added. Click "Add Test Kebab" first, then go to the cart page.');
+        }
+
+        // Log screen size for debugging
+        console.log('Screen size:', window.innerWidth + 'x' + window.innerHeight);
+        window.addEventListener('resize', () => {
+            console.log('New screen size:', window.innerWidth + 'x' + window.innerHeight);
+        });
+    </script>
+</body>
+</html>

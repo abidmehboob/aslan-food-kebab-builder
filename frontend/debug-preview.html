@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Kebab Preview - Aslan Food</title>
+</head>
+<body>
+    <h2>Debug: Kebab Preview Generation</h2>
+    <div id="debug-info"></div>
+    
+    <script>
+        async function testPreview() {
+            const debugDiv = document.getElementById('debug-info');
+            debugDiv.innerHTML = '<p>Testing kebab preview generation...</p>';
+            
+            try {
+                console.log('Testing preview API...');
+                
+                const response = await fetch('/api/v1/ingredients/preview', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        size: 'medium',
+                        selectedIngredients: ['1', '2', '3']
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Preview data:', data);
+                    
+                    debugDiv.innerHTML = `
+                        <h3>✅ Preview API Working!</h3>
+                        <p><strong>Success:</strong> ${data.success}</p>
+                        <p><strong>Size:</strong> ${data.data?.size || 'Not specified'}</p>
+                        <p><strong>Layers:</strong> ${data.data?.layers?.length || 0} layers</p>
+                        <div><strong>SVG Preview:</strong></div>
+                        <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                            ${data.data?.visualization || 'No SVG generated'}
+                        </div>
+                        <p><strong>Raw Response:</strong></p>
+                        <pre style="background: #f5f5f5; padding: 10px; overflow: auto;">${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    const errorData = await response.json();
+                    debugDiv.innerHTML = `
+                        <h3>❌ Preview API Error</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Error:</strong> ${errorData.message}</p>
+                        <pre>${JSON.stringify(errorData, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error testing preview:', error);
+                debugDiv.innerHTML = `
+                    <h3>❌ Network Error</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+        
+        // Run test when page loads
+        testPreview();
+    </script>
+</body>
+</html>

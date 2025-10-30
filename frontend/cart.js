@@ -75,16 +75,18 @@ class CartManager {
         const cartSummary = document.getElementById('cartSummary');
         const cartItemsCount = document.getElementById('cartItemsCount');
 
+        const cartContentContainer = document.getElementById('cartContentContainer');
+
         if (this.cart.length === 0) {
             emptyCart.style.display = 'block';
-            cartSummary.style.display = 'none';
-            cartItemsCount.textContent = 'Your cart is empty';
+            cartContentContainer.style.display = 'none';
+            cartItemsCount.textContent = 'Your cart is empty - time to build some kebabs!';
             return;
         }
 
         emptyCart.style.display = 'none';
-        cartSummary.style.display = 'block';
-        cartItemsCount.textContent = `${this.cart.length} kebab${this.cart.length > 1 ? 's' : ''} in your cart`;
+        cartContentContainer.style.display = 'block';
+        cartItemsCount.textContent = `${this.cart.length} delicious kebab${this.cart.length > 1 ? 's' : ''} ready for ordering`;
 
         cartItemsContainer.innerHTML = '';
         let grandTotal = 0;
@@ -99,13 +101,22 @@ class CartManager {
             totalWeight += kebab.weight || 0;
         });
 
+        // Update cart statistics
+        const subtotal = grandTotal;
+        const tax = subtotal * 0.08;
+        const finalTotal = subtotal + tax;
+
+        // Update cart stats section
+        document.getElementById('itemCount').textContent = this.cart.length;
+        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+        document.getElementById('finalTotalText').textContent = `$${finalTotal.toFixed(2)}`;
+
+        // Update main total display
         document.getElementById('finalTotal').innerHTML = `
-            <div>Total: $${grandTotal.toFixed(2)}</div>
+            <div>Total: $${finalTotal.toFixed(2)}</div>
             <div style="font-size: 0.9em; margin-top: 5px; opacity: 0.9;">
-                🥩 Total Protein: ${totalProtein.toFixed(1)}g
-            </div>
-            <div style="font-size: 0.9em; margin-top: 3px; opacity: 0.9;">
-                ⚖️ Total Weight: ${totalWeight.toFixed(0)}g
+                🥩 Total Protein: ${totalProtein.toFixed(1)}g | ⚖️ Weight: ${totalWeight.toFixed(0)}g
             </div>
         `;
     }
@@ -169,8 +180,8 @@ class CartManager {
                 <button class="action-button remove-button" onclick="cartManager.removeFromCart(${index})">
                     Remove from Cart
                 </button>
-                <button class="action-button" onclick="cartManager.generateKebabImages(${index})" 
-                        style="background: linear-gradient(45deg, #667eea, #764ba2); color: white;">
+                <button class="action-button generate-ai-btn" onclick="cartManager.generateKebabImages(${index})" 
+                        style="background: linear-gradient(45deg, #667eea, #764ba2) !important; color: white !important; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; margin: 5px 0; min-width: 180px; display: block; width: 100%;">
                     🎨 Generate AI Images
                 </button>
             </div>
@@ -369,18 +380,31 @@ Your kebabs will be ready in 15-20 minutes.`);
     }
 
     async generateKebabImages(index) {
+        console.log('🎨 Generate AI Images clicked for kebab index:', index);
+        
         const kebab = this.cart[index];
-        if (!kebab) return;
+        if (!kebab) {
+            console.error('Kebab not found at index:', index);
+            return;
+        }
 
         const aiImagesContainer = document.querySelector(`#aiImages-${index} .ai-images-container`);
-        if (!aiImagesContainer) return;
+        if (!aiImagesContainer) {
+            console.error('AI images container not found for index:', index);
+            return;
+        }
+
+        console.log('🎨 Starting AI image generation...');
 
         // Get ingredient details
         const selectedIngredientDetails = kebab.selectedIngredients.map(id => {
             return this.ingredients.find(ing => ing.id === id);
         }).filter(ing => ing);
 
-        // Show loading state
+        console.log('🧅 Selected ingredient IDs:', kebab.selectedIngredients);
+        console.log('🥙 Resolved ingredient details:', selectedIngredientDetails.map(ing => ({ id: ing.id, name: ing.name, category: ing.category })));
+
+        // Show loading state with fallback option
         aiImagesContainer.innerHTML = `
             <div class="ai-image-loading" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
                 <div style="font-size: 2em; margin-bottom: 15px;">🎨</div>
@@ -388,9 +412,22 @@ Your kebabs will be ready in 15-20 minutes.`);
                 <div style="width: 100%; height: 4px; background: #e9ecef; border-radius: 2px; overflow: hidden;">
                     <div style="height: 100%; background: linear-gradient(45deg, #667eea, #764ba2); width: 0%; animation: loading 3s ease-in-out infinite;" id="loadingBar-${index}"></div>
                 </div>
-                <p style="color: #666; margin-top: 10px; font-size: 0.9em;">This may take 10-15 seconds...</p>
+                <p style="color: #666; margin: 10px 0; font-size: 0.9em;">AI services can be slow (15-30 seconds)...</p>
+                <button onclick="window.cartManager?.triggerSVGFallback?.(this.closest('.cart-item'))" 
+                        style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em; margin-top: 10px;">
+                    🚀 Load SVG Preview Now
+                </button>
             </div>
         `;
+        
+        // Auto-fallback to SVG after 15 seconds
+        setTimeout(() => {
+            const loadingElement = document.getElementById(`loadingBar-${index}`);
+            if (loadingElement && loadingElement.closest('.ai-image-loading')) {
+                console.log('⏰ Auto-triggering SVG fallback after 15 seconds');
+                this.triggerSVGFallback(document.querySelector(`[data-index="${index}"]`));
+            }
+        }, 15000);
 
         // Add loading animation
         const style = document.createElement('style');
@@ -405,25 +442,38 @@ Your kebabs will be ready in 15-20 minutes.`);
 
         try {
             // Generate prompts for both images
-            const openKebabPrompt = this.generateOpenKebabPrompt(kebab, selectedIngredientDetails);
-            const wrappedKebabPrompt = this.generateWrappedKebabPrompt(kebab, selectedIngredientDetails);
+            const openKebabPrompts = this.generateOpenKebabPrompt(kebab, selectedIngredientDetails);
+            const wrappedKebabPrompts = this.generateWrappedKebabPrompt(kebab, selectedIngredientDetails);
 
-            // Call backend API to generate images
-            const response = await fetch(`${this.apiBaseUrl}/kebab-builder/generate-images`, {
+            // Call backend API to generate images with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+            const response = await fetch(`${this.apiBaseUrl}/v1/kebab-builder/generate-images`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                signal: controller.signal,
                 body: JSON.stringify({
-                    openKebabPrompt,
-                    wrappedKebabPrompt,
+                    openKebabPrompt: openKebabPrompts.detailed,
+                    openKebabPromptCompact: openKebabPrompts.compact,
+                    wrappedKebabPrompt: wrappedKebabPrompts.detailed,
+                    wrappedKebabPromptCompact: wrappedKebabPrompts.compact,
                     kebabData: {
                         size: kebab.size,
                         ingredients: selectedIngredientDetails.map(ing => ing.name),
-                        measurements: this.getKebabMeasurements(kebab.size)
+                        measurements: this.getKebabMeasurements(kebab.size),
+                        ingredientDetails: selectedIngredientDetails.map(ing => ({
+                            id: ing.id,
+                            name: ing.name,
+                            category: ing.category
+                        }))
                     }
                 })
             });
+
+            clearTimeout(timeoutId);
 
             const data = await response.json();
 
@@ -435,25 +485,258 @@ Your kebabs will be ready in 15-20 minutes.`);
             }
 
         } catch (error) {
-            console.error('Error generating AI images:', error);
+            const isTimeout = error.name === 'AbortError';
+            const isRateLimit = error.message && (error.message.includes('rate limit') || error.message.includes('Too many requests'));
             
-            // Fallback to placeholder images with detailed descriptions
-            this.displayFallbackImages(aiImagesContainer, kebab, selectedIngredientDetails);
+            console.error(`${isTimeout ? '⏰ AI generation timeout' : (isRateLimit ? '🚫 AI service rate limited' : '❌ AI generation error')}:`, error);
+            
+            // Determine error type and message
+            let errorTitle = 'AI Service Unavailable';
+            let errorIcon = '⚡';
+            
+            if (isTimeout) {
+                errorTitle = 'AI Service Timeout';
+                errorIcon = '⏰';
+            } else if (isRateLimit) {
+                errorTitle = 'AI Service Temporarily Busy';
+                errorIcon = '⏸️';
+            }
+            
+            // Show immediate fallback message
+            aiImagesContainer.innerHTML = `
+                <div style="padding: 40px; text-align: center; background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%); color: white; border-radius: 15px;">
+                    <div style="font-size: 3em; margin-bottom: 15px;">${errorIcon}</div>
+                    <h5 style="margin: 0; margin-bottom: 10px;">${errorTitle}</h5>
+                    <p style="margin: 0; font-size: 0.9em; opacity: 0.9;">Loading professional SVG visualization...</p>
+                </div>
+            `;
+            
+            console.log(`🔄 ${isTimeout ? 'Timeout' : 'Error'} - switching to SVG fallback immediately`);
+            
+            // Try to get SVG preview as fallback
+            try {
+                const svgResponse = await fetch(`${this.apiBaseUrl}/v1/ingredients/preview`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        size: kebab.size,
+                        selectedIngredients: kebab.selectedIngredients.map(String)
+                    })
+                });
+                
+                const svgData = await svgResponse.json();
+                if (svgData.success) {
+                    console.log('✅ SVG fallback loaded successfully');
+                    this.displaySVGFallback(aiImagesContainer, kebab, selectedIngredientDetails, svgData.data);
+                } else {
+                    console.log('⚠️ SVG generation failed, using text fallback');
+                    this.displayFallbackImages(aiImagesContainer, kebab, selectedIngredientDetails);
+                }
+            } catch (svgError) {
+                console.error('Error generating SVG fallback:', svgError);
+                // Final fallback to placeholder images with detailed descriptions
+                this.displayFallbackImages(aiImagesContainer, kebab, selectedIngredientDetails);
+            }
         }
     }
 
     generateOpenKebabPrompt(kebab, ingredients) {
-        const ingredientNames = ingredients.map(ing => ing.name.toLowerCase()).join(', ');
-        const tortillaType = ingredients.find(ing => ing.category === 'tortilla')?.name || 'regular tortilla';
+        console.log('🔍 Generating AI prompt for ingredients:', ingredients.map(ing => ing.name));
         
-        return `High-quality food photography of an open ${kebab.size} kebab wrap laid flat on a white marble surface. The ${tortillaType.toLowerCase()} is fully unwrapped and spread open, showing all ingredients clearly arranged and visible: ${ingredientNames}. Professional lighting, top-down view, ingredients are fresh and colorful, restaurant-quality presentation, ultra-detailed, 4K resolution, food styling perfection`;
+        const tortillaType = ingredients.find(ing => ing.category === 'tortilla')?.name || 'White Flour Tortilla';
+        const proteins = ingredients.filter(ing => ing.category === 'protein');
+        const vegetables = ingredients.filter(ing => ing.category === 'vegetables');
+        const sauces = ingredients.filter(ing => ing.category === 'sauces');
+        const extras = ingredients.filter(ing => ing.category === 'extras');
+        
+        // Create very specific descriptions for each ingredient
+        let ingredientDetails = [];
+        
+        // Base tortilla
+        ingredientDetails.push(`BASE: ${tortillaType} laid flat and fully opened`);
+        
+        // Proteins with specific descriptions
+        if (proteins.length > 0) {
+            proteins.forEach(protein => {
+                switch(protein.name) {
+                    case 'Grilled Chicken':
+                        ingredientDetails.push('PROTEIN: Grilled chicken breast strips - golden brown, tender pieces');
+                        break;
+                    case 'Lamb Kebab':
+                        ingredientDetails.push('PROTEIN: Seasoned lamb kebab meat - dark brown, juicy chunks');
+                        break;
+                    case 'Beef Doner':
+                        ingredientDetails.push('PROTEIN: Sliced beef doner - thin strips, well-seasoned');
+                        break;
+                    case 'Mixed Grill':
+                        ingredientDetails.push('PROTEIN: Mixed grilled meats - combination of chicken and lamb pieces');
+                        break;
+                    case 'Falafel':
+                        ingredientDetails.push('PROTEIN: Golden brown falafel balls - crispy exterior, green herbs visible');
+                        break;
+                    default:
+                        ingredientDetails.push(`PROTEIN: ${protein.name.toLowerCase()}`);
+                }
+            });
+        }
+        
+        // Vegetables with specific descriptions
+        if (vegetables.length > 0) {
+            vegetables.forEach(veg => {
+                switch(veg.name) {
+                    case 'Fresh Lettuce':
+                        ingredientDetails.push('VEGETABLE: Fresh iceberg lettuce - crisp green leaves, finely shredded');
+                        break;
+                    case 'Fresh Tomatoes':
+                        ingredientDetails.push('VEGETABLE: Fresh tomato slices - bright red, juicy rounds');
+                        break;
+                    case 'Red Onions':
+                        ingredientDetails.push('VEGETABLE: Red onion slices - purple-red rings, thinly cut');
+                        break;
+                    case 'Cucumbers':
+                        ingredientDetails.push('VEGETABLE: Fresh cucumber slices - pale green rounds with dark green skin');
+                        break;
+                    case 'Bell Peppers':
+                        ingredientDetails.push('VEGETABLE: Colorful bell pepper strips - red, yellow, and green pieces');
+                        break;
+                    case 'Pickles':
+                        ingredientDetails.push('VEGETABLE: Dill pickle slices - small green rounds with bumpy texture');
+                        break;
+                    case 'Jalapeños':
+                        ingredientDetails.push('VEGETABLE: Jalapeño pepper slices - bright green rings, small and spicy');
+                        break;
+                    default:
+                        ingredientDetails.push(`VEGETABLE: ${veg.name.toLowerCase()}`);
+                }
+            });
+        }
+        
+        // Sauces with specific descriptions
+        if (sauces.length > 0) {
+            sauces.forEach(sauce => {
+                switch(sauce.name) {
+                    case 'Garlic Aioli':
+                        ingredientDetails.push('SAUCE: Creamy white garlic aioli - smooth drizzle pattern');
+                        break;
+                    case 'Hot Sauce':
+                        ingredientDetails.push('SAUCE: Bright red hot sauce - thin spicy drizzle');
+                        break;
+                    case 'Tzatziki':
+                        ingredientDetails.push('SAUCE: White tzatziki sauce - creamy with green herb flecks');
+                        break;
+                    case 'Tahini Sauce':
+                        ingredientDetails.push('SAUCE: Light brown tahini sauce - smooth sesame drizzle');
+                        break;
+                    case 'Hummus':
+                        ingredientDetails.push('SAUCE: Beige hummus spread - smooth chickpea paste');
+                        break;
+                    default:
+                        ingredientDetails.push(`SAUCE: ${sauce.name.toLowerCase()}`);
+                }
+            });
+        }
+        
+        // Extras with specific descriptions
+        if (extras.length > 0) {
+            extras.forEach(extra => {
+                switch(extra.name) {
+                    case 'Melted Cheese':
+                        ingredientDetails.push('EXTRA: Melted yellow cheese - gooey golden layer');
+                        break;
+                    case 'Crispy Fries':
+                        ingredientDetails.push('EXTRA: Golden french fries - crispy potato sticks inside kebab');
+                        break;
+                    case 'Grilled Halloumi':
+                        ingredientDetails.push('EXTRA: Grilled halloumi cheese - white squares with grill marks');
+                        break;
+                    case 'Double Meat':
+                        ingredientDetails.push('EXTRA: Double portion of selected meat - extra protein layer');
+                        break;
+                    case 'Avocado':
+                        ingredientDetails.push('EXTRA: Fresh avocado slices - bright green creamy pieces');
+                        break;
+                    case 'Olives':
+                        ingredientDetails.push('EXTRA: Mixed olives - black and green Mediterranean olives');
+                        break;
+                    default:
+                        ingredientDetails.push(`EXTRA: ${extra.name.toLowerCase()}`);
+                }
+            });
+        }
+        
+        // Create both detailed and compact versions
+        const detailedPrompt = `HIGH-PRECISION FOOD PHOTOGRAPHY: Open ${kebab.size} kebab laid completely flat on white marble surface.
+
+MANDATORY INGREDIENT LIST (ONLY THESE - NO SUBSTITUTIONS):
+${ingredientDetails.join('\n')}
+
+STRICT RULES:
+- Total ingredients count: EXACTLY ${ingredients.length} items
+- NO random vegetables, NO generic fillings
+- Each ingredient must match the specific name listed
+- Perfect lighting showing true colors
+- Top-down view, professional food photography
+- Ultra-detailed 4K, restaurant quality
+- Each ingredient easily identifiable
+
+FORBIDDEN: Do not add lettuce unless "Fresh Lettuce" is listed. Do not add tomatoes unless "Fresh Tomatoes" is listed. Do not add any ingredient not explicitly mentioned above.`;
+
+        // Create compact version for services with length limits
+        const ingredientNames = ingredients.map(ing => ing.name).join(', ');
+        const compactPrompt = `Open ${kebab.size} kebab on white surface. EXACT ingredients: ${tortillaType}, ${ingredientNames}. Professional food photo, top view, all ingredients visible and identifiable. NO other ingredients.`;
+        
+        const prompt = {
+            detailed: detailedPrompt,
+            compact: compactPrompt,
+            ingredients: ingredientNames
+        };
+        
+        console.log('🤖 Generated AI prompts:', { 
+            detailed: detailedPrompt.length + ' chars', 
+            compact: compactPrompt.length + ' chars',
+            ingredients: ingredientNames
+        });
+        return prompt;
     }
 
     generateWrappedKebabPrompt(kebab, ingredients) {
         const measurements = this.getKebabMeasurements(kebab.size);
-        const tortillaType = ingredients.find(ing => ing.category === 'tortilla')?.name || 'regular tortilla';
+        const tortillaType = ingredients.find(ing => ing.category === 'tortilla')?.name || 'White Flour Tortilla';
+        const totalIngredients = ingredients.length;
         
-        return `Professional food photography of a perfectly wrapped ${kebab.size} kebab made with ${tortillaType.toLowerCase()}, on a white background. The kebab is ${measurements.length}cm long and ${measurements.diameter}cm in diameter. White measurement lines and dimensions are clearly visible overlaid on the image showing exact size specifications. Clean, minimal, technical drawing style with precise measurements marked with thin white lines and text labels. High-quality, well-lit, commercial food photography`;
+        // Get specific filling preview
+        const proteins = ingredients.filter(ing => ing.category === 'protein').map(p => p.name).join(' and ') || '';
+        const mainVegetables = ingredients.filter(ing => ing.category === 'vegetables').slice(0, 2).map(v => v.name).join(' and ') || '';
+        
+        console.log('🌯 Generating wrapped kebab prompt for:', { tortillaType, proteins, mainVegetables, totalIngredients });
+        
+        const detailedPrompt = `Professional commercial food photography of a perfectly wrapped ${kebab.size} kebab on a clean white marble background. 
+
+SPECIFIC KEBAB DETAILS:
+- Wrap: ${tortillaType} - golden brown exterior with proper tortilla texture
+- Size: exactly ${measurements.length}cm length × ${measurements.diameter}cm diameter
+- Weight: ${measurements.weight}g
+- Contains: ${totalIngredients} premium ingredients including ${proteins}${mainVegetables ? ` with ${mainVegetables}` : ''}
+
+VISUAL REQUIREMENTS:
+- Perfect cylindrical wrap shape, tightly rolled
+- Tortilla exterior showing natural texture and slight browning
+- Both ends slightly open showing colorful filling ingredients
+- Professional food styling with slight moisture on surface
+- Clean white measurement overlay lines with precise dimensions
+- Technical ruler markings showing exact measurements
+- Studio lighting creating soft shadows
+
+CRITICAL: The kebab must look substantial and filled, matching the ${measurements.weight}g weight specification. Ultra-high resolution, commercial food photography quality, minimalist composition with precise measurement annotations in white text overlay.`;
+
+        const compactPrompt = `Wrapped ${kebab.size} kebab with ${tortillaType}, ${measurements.length}cm × ${measurements.diameter}cm, contains ${proteins}${mainVegetables ? ` and ${mainVegetables}` : ''}. Professional food photo with measurement overlay.`;
+
+        return {
+            detailed: detailedPrompt,
+            compact: compactPrompt
+        };
     }
 
     getKebabMeasurements(size) {
@@ -474,7 +757,7 @@ Your kebabs will be ready in 15-20 minutes.`);
                 <img src="${imageData.openKebabImage}" 
                      alt="Open kebab showing all ingredients" 
                      style="width: 100%; height: 200px; object-fit: cover;"
-                     onerror="this.parentElement.innerHTML='<div style=&quot;padding: 20px; text-align: center; color: #666;&quot;><div style=&quot;font-size: 2em;&quot;>🥙</div><p>Open Kebab View</p><small>Image generation failed</small></div>'">
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=&quot;padding: 40px; text-align: center; background: linear-gradient(135deg, #d4a574 0%, #f4e4bc 100%); color: #8B4513;&quot;><div style=&quot;font-size: 3em; margin-bottom: 10px;&quot;>🥙</div><h5 style=&quot;margin: 0; margin-bottom: 8px;&quot;>SVG Preview Loading...</h5><p style=&quot;margin: 0; font-size: 0.9em; opacity: 0.8;&quot;>Enhanced visualization will appear shortly</p></div>'; setTimeout(() => window.cartManager?.triggerSVGFallback?.(this.closest('.cart-item')), 100);"
                 <div style="padding: 10px; text-align: center;">
                     <h5 style="margin: 0; color: #333;">Open Kebab View</h5>
                     <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #666;">All ingredients visible</p>
@@ -495,20 +778,71 @@ Your kebabs will be ready in 15-20 minutes.`);
         `;
     }
 
-    displayFallbackImages(container, kebab, ingredients) {
+    displaySVGFallback(container, kebab, ingredients, svgData) {
         const measurements = this.getKebabMeasurements(kebab.size);
-        const ingredientsList = ingredients.map(ing => ing.name).join(', ');
         
         container.innerHTML = `
-            <div class="ai-image-fallback" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 20px; color: white; text-align: center;">
-                <div style="font-size: 3em; margin-bottom: 10px;">🥙</div>
-                <h5 style="margin: 0; margin-bottom: 10px;">Open Kebab Visualization</h5>
-                <p style="font-size: 0.9em; margin-bottom: 10px; opacity: 0.9;">
-                    ${this.capitalizeFirst(kebab.size)} ${ingredients.find(ing => ing.category === 'tortilla')?.name || 'Tortilla'}
+            <div class="svg-preview-container" style="background: white; border-radius: 15px; padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); border: 2px solid #d4a574;">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <h5 style="margin: 0; color: #8B4513; font-size: 1.3em;">🥙 Open Kebab View</h5>
+                    <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">Detailed ingredient assembly visualization</p>
+                </div>
+                
+                <div style="display: flex; justify-content: center; margin-bottom: 20px; background: #f8f9fa; border-radius: 10px; padding: 15px;">
+                    ${svgData.visualization.svg}
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #f4e4bc 0%, #d4a574 100%); border-radius: 10px; padding: 15px; color: #333;">
+                    <h6 style="margin: 0 0 10px 0; color: #8B4513; font-size: 1em;">📝 Assembly Description</h6>
+                    <p style="margin: 0; font-size: 0.85em; line-height: 1.5;">${svgData.visualization.description}</p>
+                </div>
+            </div>
+            
+            <div class="measurements-container" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 15px; padding: 20px; color: white; text-align: center; margin-top: 15px;">
+                <div style="font-size: 2.5em; margin-bottom: 10px;">📏</div>
+                <h5 style="margin: 0; margin-bottom: 15px; font-size: 1.2em;">Size Specifications</h5>
+                <div style="background: rgba(255,255,255,0.2); border-radius: 10px; padding: 15px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9em;">
+                        <div><strong>Length:</strong><br>${measurements.length}cm</div>
+                        <div><strong>Diameter:</strong><br>${measurements.diameter}cm</div>
+                        <div><strong>Weight:</strong><br>${measurements.weight}g</div>
+                        <div><strong>Serves:</strong><br>${svgData.size.serves || '1 person'}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    displayFallbackImages(container, kebab, ingredients) {
+        const measurements = this.getKebabMeasurements(kebab.size);
+        
+        // Organize ingredients by category
+        const tortilla = ingredients.find(ing => ing.category === 'tortilla');
+        const proteins = ingredients.filter(ing => ing.category === 'protein');
+        const vegetables = ingredients.filter(ing => ing.category === 'vegetables');
+        const sauces = ingredients.filter(ing => ing.category === 'sauces');
+        const extras = ingredients.filter(ing => ing.category === 'extras');
+        
+        container.innerHTML = `
+            <div class="ai-image-fallback" style="background: linear-gradient(135deg, #d4a574 0%, #f4e4bc 100%); border-radius: 15px; padding: 25px; color: #333; text-align: center; border: 3px solid #d4a574;">
+                <div style="font-size: 3em; margin-bottom: 15px;">🥙</div>
+                <h5 style="margin: 0; margin-bottom: 15px; color: #8B4513; font-size: 1.2em;">Open Kebab Assembly View</h5>
+                <p style="font-size: 0.9em; margin-bottom: 15px; color: #666;">
+                    ${this.capitalizeFirst(kebab.size)} kebab showing ingredient layers
                 </p>
-                <div style="background: rgba(255,255,255,0.2); border-radius: 5px; padding: 8px; font-size: 0.8em;">
-                    <strong>Ingredients:</strong><br>
-                    ${ingredientsList}
+                
+                <div style="background: rgba(255,255,255,0.9); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+                    <div style="text-align: left; font-size: 0.85em; line-height: 1.6;">
+                        <div style="margin-bottom: 8px;"><strong>🌯 BASE:</strong> ${tortilla ? tortilla.name : 'White Flour Tortilla'}</div>
+                        ${proteins.length > 0 ? `<div style="margin-bottom: 8px;"><strong>🥩 PROTEIN:</strong> ${proteins.map(p => p.name).join(', ')}</div>` : ''}
+                        ${vegetables.length > 0 ? `<div style="margin-bottom: 8px;"><strong>🥬 VEGETABLES:</strong> ${vegetables.map(v => v.name).join(', ')}</div>` : ''}
+                        ${sauces.length > 0 ? `<div style="margin-bottom: 8px;"><strong>🥄 SAUCES:</strong> ${sauces.map(s => s.name).join(', ')}</div>` : ''}
+                        ${extras.length > 0 ? `<div style="margin-bottom: 8px;"><strong>✨ EXTRAS:</strong> ${extras.map(e => e.name).join(', ')}</div>` : ''}
+                    </div>
+                </div>
+                
+                <div style="background: rgba(139, 69, 19, 0.1); border-radius: 8px; padding: 10px; font-size: 0.75em; color: #8B4513;">
+                    <strong>Assembly Order:</strong> Base → Protein → Vegetables → Sauces → Extras
                 </div>
             </div>
             <div class="ai-image-fallback" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 8px; padding: 20px; color: white; text-align: center;">
@@ -527,8 +861,106 @@ Your kebabs will be ready in 15-20 minutes.`);
         `;
     }
 
+    displaySVGFallback(container, kebab, ingredients, svgData) {
+        const measurements = this.getKebabMeasurements(kebab.size);
+        
+        container.innerHTML = `
+            <div class="svg-preview-container" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.15); border: 2px solid #d4a574;">
+                <div style="padding: 15px; background: linear-gradient(135deg, #d4a574 0%, #f4e4bc 100%); text-align: center;">
+                    <h5 style="margin: 0; color: #8B4513; font-weight: 700;">🥙 Open Kebab Assembly View</h5>
+                    <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">Professional ingredient visualization</p>
+                </div>
+                <div style="padding: 20px; display: flex; justify-content: center; background: #fafafa;">
+                    ${svgData.visualization.svg}
+                </div>
+                <div style="padding: 15px; background: white;">
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                        <p style="margin: 0; font-size: 0.85em; color: #333; line-height: 1.5;">
+                            <strong>Assembly Description:</strong><br>
+                            ${svgData.visualization.description}
+                        </p>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8em; color: #666;">
+                        <div><strong>📏 Length:</strong> ${measurements.length}cm</div>
+                        <div><strong>📐 Diameter:</strong> ${measurements.diameter}cm</div>
+                        <div><strong>⚖️ Weight:</strong> ${measurements.weight}g</div>
+                        <div><strong>🥙 Style:</strong> ${kebab.size} kebab</div>
+                    </div>
+                </div>
+            </div>
+            <div class="wrapped-kebab-preview" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 15px; padding: 25px; color: white; text-align: center; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
+                <div style="font-size: 3em; margin-bottom: 15px;">📏</div>
+                <h5 style="margin: 0; margin-bottom: 15px; font-size: 1.2em;">Wrapped Kebab Specifications</h5>
+                <div style="background: rgba(255,255,255,0.2); border-radius: 10px; padding: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9em; margin-bottom: 15px;">
+                        <div><strong>📏 Length:</strong><br>${measurements.length} cm</div>
+                        <div><strong>📐 Diameter:</strong><br>${measurements.diameter} cm</div>
+                        <div><strong>⚖️ Weight:</strong><br>${measurements.weight} g</div>
+                        <div><strong>👥 Serves:</strong><br>${svgData.size.serves || '1'}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 5px; padding: 10px; font-size: 0.8em;">
+                        <strong>Perfect for:</strong> ${svgData.size.description || 'A satisfying meal'}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     capitalizeFirst(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    async triggerSVGFallback(cartItemElement) {
+        try {
+            if (!cartItemElement) return;
+            
+            const index = cartItemElement.dataset.index;
+            const kebab = this.cart[index];
+            if (!kebab) return;
+
+            // Get ingredient details
+            const selectedIngredientDetails = kebab.selectedIngredients.map(id => {
+                return this.ingredients.find(ing => ing.id === id);
+            }).filter(ing => ing);
+
+            // Find the AI images container
+            const aiImagesContainer = cartItemElement.querySelector('.ai-images');
+            if (!aiImagesContainer) return;
+
+            console.log('Triggering SVG fallback for kebab:', kebab);
+
+            // Get SVG preview
+            const svgResponse = await fetch(`${this.apiBaseUrl}/v1/ingredients/preview`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    size: kebab.size,
+                    selectedIngredients: kebab.selectedIngredients.map(String)
+                })
+            });
+            
+            const svgData = await svgResponse.json();
+            if (svgData.success) {
+                this.displaySVGFallback(aiImagesContainer, kebab, selectedIngredientDetails, svgData.data);
+            } else {
+                this.displayFallbackImages(aiImagesContainer, kebab, selectedIngredientDetails);
+            }
+        } catch (error) {
+            console.error('Error in SVG fallback:', error);
+            // Show the enhanced fallback images instead
+            const aiImagesContainer = cartItemElement?.querySelector('.ai-images');
+            if (aiImagesContainer) {
+                const index = cartItemElement.dataset.index;
+                const kebab = this.cart[index];
+                const selectedIngredientDetails = kebab?.selectedIngredients.map(id => {
+                    return this.ingredients.find(ing => ing.id === id);
+                }).filter(ing => ing) || [];
+                
+                this.displayFallbackImages(aiImagesContainer, kebab, selectedIngredientDetails);
+            }
+        }
     }
 }
 
@@ -539,3 +971,107 @@ let cartManager;
 document.addEventListener('DOMContentLoaded', () => {
     cartManager = new CartManager();
 });
+
+// Global function to add test kebab to cart
+window.addTestKebab = function() {
+    const testKebab = {
+        id: Date.now(),
+        size: 'large',
+        selectedIngredients: [21, 1, 2, 5, 6, 7, 11, 13, 16, 18], // Mix of all categories
+        pricing: {
+            base: 9.00,
+            ingredients: 8.35,
+            total: 17.35
+        },
+        protein: 45.2,
+        weight: 625,
+        timestamp: Date.now()
+    };
+    
+    const cart = JSON.parse(localStorage.getItem('kebabCart') || '[]');
+    cart.push(testKebab);
+    localStorage.setItem('kebabCart', JSON.stringify(cart));
+    
+    console.log('✅ Test kebab added to cart! Reload page to see the improved visualization system.');
+    
+    // Reload the page to show the new cart item
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+};
+
+// Global function to force SVG preview (bypass AI)
+window.forceSVGPreview = function() {
+    if (window.cartManager) {
+        const cartItems = document.querySelectorAll('.cart-item');
+        cartItems.forEach(item => {
+            console.log('🎨 Forcing SVG preview for cart item');
+            window.cartManager.triggerSVGFallback(item);
+        });
+    } else {
+        console.log('❌ Cart manager not ready');
+    }
+};
+
+// Global function to test SVG preview
+window.testSVGPreview = async function(size = 'medium', ingredients = ['1', '5', '6', '11', '16']) {
+    if (!cartManager) {
+        console.error('Cart manager not initialized');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${cartManager.apiBaseUrl}/v1/ingredients/preview`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                size: size,
+                selectedIngredients: ingredients
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            console.log('✅ SVG Preview Data:', data.data);
+            
+            // Create test container
+            const testContainer = document.createElement('div');
+            testContainer.id = 'svg-test-container';
+            testContainer.style.cssText = `
+                position: fixed; top: 50px; left: 50px; width: 600px; max-height: 80vh; 
+                overflow-y: auto; z-index: 9999; background: white; border-radius: 15px; 
+                box-shadow: 0 15px 50px rgba(0,0,0,0.4); border: 3px solid #d4a574;
+            `;
+            
+            // Mock data for display
+            const mockKebab = { size: size };
+            const mockIngredients = await cartManager.loadIngredients().then(() => {
+                return ingredients.map(id => cartManager.ingredients.find(ing => ing.id === parseInt(id))).filter(Boolean);
+            });
+            
+            cartManager.displaySVGFallback(testContainer, mockKebab, mockIngredients, data.data);
+            
+            // Add close button
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '✖ Close Test';
+            closeBtn.style.cssText = `
+                position: absolute; top: 15px; right: 15px; background: #e74c3c; 
+                color: white; border: none; padding: 8px 15px; border-radius: 8px; 
+                cursor: pointer; font-weight: bold; z-index: 10000;
+            `;
+            closeBtn.onclick = () => testContainer.remove();
+            testContainer.appendChild(closeBtn);
+            
+            document.body.appendChild(testContainer);
+            
+            console.log('🎨 SVG Preview displayed! Use testSVGPreview("large", ["1","2","5","6","11"]) to test different combinations.');
+            return data.data;
+        } else {
+            console.error('❌ Failed to generate SVG preview:', data.message);
+        }
+    } catch (error) {
+        console.error('❌ Error testing SVG preview:', error);
+    }
+};

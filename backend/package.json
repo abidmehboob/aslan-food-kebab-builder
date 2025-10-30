@@ -8,8 +8,8 @@
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "start": "SET NODE_ENV=production && node server.js",
-    "dev": "SET NODE_ENV=development && node server.js",
+    "start": "NODE_ENV=production node server.js",
+    "dev": "NODE_ENV=development node server.js",
     "prod": "pm2 start ecosystem.config.js --env production",
     "test": "NODE_ENV=test jest --detectOpenHandles",
     "test:watch": "npm test -- --watch",
@@ -19,7 +19,7 @@
     "format": "prettier --write \"**/*.js\"",
     "seed": "node scripts/seedDatabase.js",
     "db:migrate": "node scripts/migrate.js",
-    "build": "echo 'No build step required for Node.js backend'",
+    "build": "mkdir -p logs uploads",
     "logs": "pm2 logs",
     "restart": "pm2 restart all",
     "stop": "pm2 stop all",
