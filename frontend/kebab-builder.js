@@ -1,7 +1,11 @@
+console.log('🥙 KebabBuilder script loaded');
+
 class KebabBuilder {
     constructor() {
+        console.log('🔧 KebabBuilder constructor called');
         // Environment-aware API URL
         this.apiBaseUrl = this.getApiBaseUrl();
+        console.log('🌐 API Base URL:', this.apiBaseUrl);
         this.selectedSize = '';
         this.selectedIngredients = [];
         this.selectedTortilla = null; // Track single tortilla selection
@@ -382,7 +386,7 @@ class KebabBuilder {
         }
 
         try {
-            const response = await fetch(`${this.apiBaseUrl}/v1/ingredients/preview`, {
+            const response = await fetch(`${this.apiBaseUrl}/ingredients/preview`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -593,7 +597,7 @@ class KebabBuilder {
         
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             // Development environment
-            return 'http://localhost:3000/api';
+            return 'http://localhost:3001/api/v1';
         } else if (hostname.includes('onrender.com')) {
             // Render.com deployment - use same domain
             return `${protocol}//${hostname}/api`;
@@ -648,7 +652,7 @@ class KebabBuilder {
 
             console.log('🎨 Generating AI images with data:', requestData);
 
-            const response = await fetch(`${this.apiBaseUrl}/v1/kebab-builder/generate-images`, {
+            const response = await fetch(`${this.apiBaseUrl}/kebab-builder/generate-images`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

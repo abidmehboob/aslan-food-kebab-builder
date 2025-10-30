@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s ease;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .test-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .result-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .result-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 10px 0;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            transition: border-color 0.2s ease;
+        }
+        
+        .result-image:hover {
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🥙 AI Image Generation Test</h1>
+        <p>Test the optimized AI image generation with timeout optimizations and popup functionality.</p>
+        
+        <button class="test-button" onclick="testAIGeneration()">
+            🎨 Test AI Image Generation
+        </button>
+        
+        <button class="test-button" onclick="testPopupFunctionality()">
+            🖼️ Test Popup Functionality  
+        </button>
+        
+        <button class="test-button" onclick="testSVGFallback()">
+            🎯 Test SVG Fallback
+        </button>
+        
+        <div id="status"></div>
+        <div id="results" class="result-container" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api/v1';
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function showResults(content) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = content;
+            resultsDiv.style.display = 'block';
+        }
+        
+        async function testAIGeneration() {
+            updateStatus('🚀 Starting AI image generation test with optimized timeouts...', 'info');
+            
+            const testData = {
+                size: 'medium',
+                selectedIngredients: [1, 2, 6] // Chicken, lamb, tomato
+            };
+            
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch(`${API_BASE}/kebab-builder/generate-images`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const endTime = Date.now();
+                const duration = (endTime - startTime) / 1000;
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    updateStatus(`✅ AI generation completed in ${duration.toFixed(1)}s`, 'success');
+                    
+                    const openImageUrl = data.data.openKebabImage || '';
+                    const wrappedImageUrl = data.data.wrappedKebabImage || '';
+                    
+                    let resultsHTML = '<h3>Generated Images:</h3>';
+                    
+                    if (openImageUrl && openImageUrl !== 'undefined') {
+                        resultsHTML += `
+                            <div>
+                                <h4>Open Kebab View:</h4>
+                                <img src="${openImageUrl}" 
+                                     alt="Open kebab" 
+                                     class="result-image"
+                                     onclick="testPopup('${openImageUrl}', 'Open Kebab', 'Generated in ${duration.toFixed(1)}s')">
+                                <p>Click image to test popup</p>
+                            </div>
+                        `;
+                    }
+                    
+                    if (wrappedImageUrl && wrappedImageUrl !== 'undefined') {
+                        resultsHTML += `
+                            <div>
+                                <h4>Wrapped Kebab View:</h4>
+                                <img src="${wrappedImageUrl}" 
+                                     alt="Wrapped kebab" 
+                                     class="result-image"
+                                     onclick="testPopup('${wrappedImageUrl}', 'Wrapped Kebab', 'Generated in ${duration.toFixed(1)}s')">
+                                <p>Click image to test popup</p>
+                            </div>
+                        `;
+                    }
+                    
+                    if (!openImageUrl && !wrappedImageUrl) {
+                        resultsHTML += '<p>⚠️ No valid image URLs returned</p>';
+                    }
+                    
+                    showResults(resultsHTML);
+                } else {
+                    throw new Error(data.message || 'AI generation failed');
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ Test failed: ${error.message}`, 'error');
+                console.error('AI generation test error:', error);
+            }
+        }
+        
+        function testPopup(imageUrl, title, description) {
+            if (!imageUrl || imageUrl === 'undefined') {
+                updateStatus('❌ Cannot test popup: Invalid image URL', 'error');
+                return;
+            }
+            
+            updateStatus(`🖼️ Testing popup for: ${title}`, 'info');
+            
+            // Create popup modal (simplified version)
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+                padding: 20px;
+                box-sizing: border-box;
+                backdrop-filter: blur(5px);
+            `;
+            
+            popup.innerHTML = `
+                <div style="
+                    background: white;
+                    border-radius: 15px;
+                    max-width: 90vw;
+                    max-height: 90vh;
+                    overflow: hidden;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+                    position: relative;
+                ">
+                    <div style="
+                        padding: 20px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <div>
+                            <h3 style="margin: 0;">${title}</h3>
+                            <p style="margin: 5px 0 0 0; opacity: 0.9;">${description}</p>
+                        </div>
+                        <button onclick="this.closest('[style*=\\"position: fixed\\"]').remove(); updateStatus('✅ Popup test successful', 'success')" 
+                                style="
+                                    background: rgba(255,255,255,0.2);
+                                    border: none;
+                                    color: white;
+                                    font-size: 24px;
+                                    width: 40px;
+                                    height: 40px;
+                                    border-radius: 50%;
+                                    cursor: pointer;
+                                ">×</button>
+                    </div>
+                    <div style="padding: 20px; text-align: center;">
+                        <img src="${imageUrl}" 
+                             alt="${title}"
+                             style="max-width: 100%; max-height: 60vh; object-fit: contain; border-radius: 10px;">
+                    </div>
+                </div>
+            `;
+            
+            // Close on backdrop click
+            popup.onclick = (e) => {
+                if (e.target === popup) {
+                    popup.remove();
+                    updateStatus('✅ Popup test successful', 'success');
+                }
+            };
+            
+            document.body.appendChild(popup);
+        }
+        
+        async function testPopupFunctionality() {
+            updateStatus('🧪 Testing popup with sample image...', 'info');
+            
+            // Use a sample image URL for testing
+            const sampleImageUrl = 'https://via.placeholder.com/400x300/667eea/white?text=Test+Image';
+            testPopup(sampleImageUrl, 'Sample Test Image', 'Testing popup functionality');
+        }
+        
+        async function testSVGFallback() {
+            updateStatus('🎯 Testing SVG fallback generation...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/ingredients/preview`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        size: 'medium',
+                        selectedIngredients: [1, 2, 6]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.visualization) {
+                    updateStatus('✅ SVG fallback generated successfully', 'success');
+                    
+                    const svgContent = data.data.visualization.svg;
+                    const resultsHTML = `
+                        <h3>SVG Fallback Result:</h3>
+                        <div style="text-align: center; cursor: pointer;" onclick="testSVGPopup(\`${svgContent.replace(/`/g, '\\`')}\`)">
+                            ${svgContent}
+                            <p>Click SVG to test popup</p>
+                        </div>
+                    `;
+                    
+                    showResults(resultsHTML);
+                } else {
+                    throw new Error(data.message || 'SVG generation failed');
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ SVG test failed: ${error.message}`, 'error');
+                console.error('SVG test error:', error);
+            }
+        }
+        
+        function testSVGPopup(svgContent) {
+            updateStatus('🖼️ Testing SVG popup...', 'info');
+            
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+                padding: 20px;
+                box-sizing: border-box;
+                backdrop-filter: blur(5px);
+            `;
+            
+            popup.innerHTML = `
+                <div style="
+                    background: white;
+                    border-radius: 15px;
+                    max-width: 90vw;
+                    max-height: 90vh;
+                    overflow: hidden;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+                    position: relative;
+                ">
+                    <div style="
+                        padding: 20px;
+                        background: linear-gradient(135deg, #d4a574 0%, #f4e4bc 100%);
+                        color: #333;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <div>
+                            <h3 style="margin: 0;">SVG Kebab Visualization</h3>
+                            <p style="margin: 5px 0 0 0; opacity: 0.8;">Detailed ingredient assembly</p>
+                        </div>
+                        <button onclick="this.closest('[style*=\\"position: fixed\\"]').remove(); updateStatus('✅ SVG popup test successful', 'success')" 
+                                style="
+                                    background: rgba(0,0,0,0.1);
+                                    border: none;
+                                    color: #333;
+                                    font-size: 24px;
+                                    width: 40px;
+                                    height: 40px;
+                                    border-radius: 50%;
+                                    cursor: pointer;
+                                ">×</button>
+                    </div>
+                    <div style="padding: 40px; text-align: center; background: #f8f9fa;">
+                        ${svgContent}
+                    </div>
+                </div>
+            `;
+            
+            popup.onclick = (e) => {
+                if (e.target === popup) {
+                    popup.remove();
+                    updateStatus('✅ SVG popup test successful', 'success');
+                }
+            };
+            
+            document.body.appendChild(popup);
+        }
+        
+        // Initialize
+        updateStatus('🥙 AI Image Generation Test Ready - Click buttons to test functionality', 'info');
+    </script>
+</body>
+</html>

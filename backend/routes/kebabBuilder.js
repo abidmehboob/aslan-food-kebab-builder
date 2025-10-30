@@ -296,8 +296,8 @@ router.post('/generate-images', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // Simulate AI image generation delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Reduced AI generation simulation delay for faster response
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Generate images with both detailed and compact prompts
     const requestData = {
@@ -415,7 +415,7 @@ async function generateWithHuggingFace(openPrompt, wrappedPrompt, kebabData) {
             guidance_scale: 7.5
           }
         }),
-        timeout: 30000
+        timeout: 3000 // Fast 3-second timeout for HuggingFace
       });
 
       if (openResponse.ok) {
@@ -442,7 +442,7 @@ async function generateWithHuggingFace(openPrompt, wrappedPrompt, kebabData) {
             guidance_scale: 7.5
           }
         }),
-        timeout: 30000
+        timeout: 3000 // Fast 3-second timeout for HuggingFace
       });
 
       if (wrappedResponse.ok) {
@@ -551,7 +551,7 @@ async function generateWithCraiyon(openPrompt, wrappedPrompt, kebabData) {
         model: 'art',
         negative_prompt: 'blurry, low quality'
       }),
-      timeout: 60000 // Craiyon can take longer
+      timeout: 4000 // Faster timeout for Craiyon
     });
 
     if (!openResponse.ok) {

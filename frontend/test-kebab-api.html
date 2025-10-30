@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kebab Builder API Test</title>
+</head>
+<body>
+    <h1>Kebab Builder API Test</h1>
+    <button onclick="testAPI()">Test API</button>
+    <div id="result"></div>
+
+    <script>
+        console.log('Script loaded!');
+        
+        async function testAPI() {
+            console.log('Testing API...');
+            document.getElementById('result').innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/v1/kebab-builder/config');
+                console.log('Response received:', response);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Data received:', data);
+                
+                document.getElementById('result').innerHTML = 
+                    '<h3>Success!</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = 
+                    '<h3>Error!</h3><p>' + error.message + '</p>';
+            }
+        }
+        
+        // Auto-test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, testing API...');
+            testAPI();
+        });
+    </script>
+</body>
+</html>

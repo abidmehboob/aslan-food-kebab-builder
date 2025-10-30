@@ -15,7 +15,7 @@ class CartManager {
             
             // Local development
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                return 'http://localhost:3000/api';
+                return 'http://localhost:3001/api';
             }
             
             // Render.com deployment
@@ -580,14 +580,14 @@ Your kebabs will be ready in 15-20 minutes.`);
             </div>
         `;
         
-        // Auto-fallback to SVG after 15 seconds
+        // Auto-fallback to SVG after 6 seconds for faster response
         setTimeout(() => {
             const loadingElement = document.getElementById(`loadingBar-${index}`);
             if (loadingElement && loadingElement.closest('.ai-image-loading')) {
-                console.log('⏰ Auto-triggering SVG fallback after 15 seconds');
+                console.log('⏰ Auto-triggering SVG fallback after 6 seconds for optimal speed');
                 this.triggerSVGFallback(document.querySelector(`[data-index="${index}"]`));
             }
-        }, 15000);
+        }, 6000);
 
         // Add loading animation
         const style = document.createElement('style');
@@ -605,9 +605,9 @@ Your kebabs will be ready in 15-20 minutes.`);
             const openKebabPrompts = this.generateOpenKebabPrompt(kebab, selectedIngredientDetails);
             const wrappedKebabPrompts = this.generateWrappedKebabPrompt(kebab, selectedIngredientDetails);
 
-            // Call backend API to generate images with timeout
+            // Call backend API to generate images with optimized timeout
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout for fast response
 
             const response = await fetch(`${this.apiBaseUrl}/v1/kebab-builder/generate-images`, {
                 method: 'POST',
@@ -637,7 +637,7 @@ Your kebabs will be ready in 15-20 minutes.`);
 
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success && data.data) {
                 // Display generated images
                 this.displayGeneratedImages(aiImagesContainer, data.data, kebab);
             } else {
@@ -912,9 +912,20 @@ CRITICAL: The kebab must look substantial and filled, matching the ${measurement
     displayGeneratedImages(container, imageData, kebab) {
         const measurements = this.getKebabMeasurements(kebab.size);
         
+        // Handle undefined image URLs gracefully
+        const openImageUrl = imageData?.openKebabImage || '';
+        const wrappedImageUrl = imageData?.wrappedKebabImage || '';
+        
+        // If both URLs are empty or invalid, fall back to SVG
+        if ((!openImageUrl || openImageUrl === 'undefined') && (!wrappedImageUrl || wrappedImageUrl === 'undefined')) {
+            console.warn('⚠️ Both AI images are invalid, triggering SVG fallback');
+            this.triggerSVGFallback(container.closest('.cart-item'));
+            return;
+        }
+        
         container.innerHTML = `
-            <div class="ai-generated-image" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)'" onclick="window.cartManager.openImagePopup('${imageData.openKebabImage}', 'Open Kebab - All Ingredients Visible', '${kebab.size} kebab showing all selected ingredients in detail')">
-                <img src="${imageData.openKebabImage}" 
+            <div class="ai-generated-image" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)'" onclick="window.cartManager && window.cartManager.openImagePopup ? window.cartManager.openImagePopup('${openImageUrl}', 'Open Kebab - All Ingredients Visible', '${kebab.size} kebab showing all selected ingredients in detail') : console.error('cartManager not available')">
+                <img src="${openImageUrl}" 
                      alt="Open kebab showing all ingredients" 
                      style="width: 100%; height: 200px; object-fit: cover; pointer-events: none;"
                      onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=&quot;padding: 40px; text-align: center; background: linear-gradient(135deg, #d4a574 0%, #f4e4bc 100%); color: #8B4513;&quot;><div style=&quot;font-size: 3em; margin-bottom: 10px;&quot;>🥙</div><h5 style=&quot;margin: 0; margin-bottom: 8px;&quot;>SVG Preview Loading...</h5><p style=&quot;margin: 0; font-size: 0.9em; opacity: 0.8;&quot;>Enhanced visualization will appear shortly</p></div>'; setTimeout(() => window.cartManager?.triggerSVGFallback?.(this.closest('.cart-item')), 100);">
@@ -923,8 +934,8 @@ CRITICAL: The kebab must look substantial and filled, matching the ${measurement
                     <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #666;">All ingredients visible • Click to enlarge</p>
                 </div>
             </div>
-            <div class="ai-generated-image" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)'" onclick="window.cartManager.openImagePopup('${imageData.wrappedKebabImage}', 'Wrapped Kebab with Measurements', 'Complete ${kebab.size} kebab wrapped and ready to serve with precise measurements')">
-                <img src="${imageData.wrappedKebabImage}" 
+            <div class="ai-generated-image" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)'" onclick="window.cartManager && window.cartManager.openImagePopup ? window.cartManager.openImagePopup('${wrappedImageUrl}', 'Wrapped Kebab with Measurements', 'Complete ${kebab.size} kebab wrapped and ready to serve with precise measurements') : console.error('cartManager not available')">
+                <img src="${wrappedImageUrl}" 
                      alt="Wrapped kebab with size measurements" 
                      style="width: 100%; height: 200px; object-fit: cover; pointer-events: none;"
                      onerror="this.parentElement.innerHTML='<div style=&quot;padding: 20px; text-align: center; color: #666;&quot;><div style=&quot;font-size: 2em;&quot;>📏</div><p>Wrapped with Measurements</p><small>Image generation failed</small></div>'">
@@ -1128,7 +1139,14 @@ CRITICAL: The kebab must look substantial and filled, matching the ${measurement
 
     // Image popup functionality
     openImagePopup(imageUrl, title, description) {
-        console.log('🖼️ Opening image popup:', title);
+        console.log('🖼️ Opening image popup:', title, 'URL:', imageUrl);
+        
+        // Validate image URL
+        if (!imageUrl || imageUrl.trim() === '' || imageUrl === 'undefined') {
+            console.warn('⚠️ Cannot open popup: Invalid or empty image URL');
+            this.showToast('Image not available', 'The AI-generated image is still loading or failed to generate. Please try again.', 'warning');
+            return;
+        }
         
         // Remove existing popup if any
         const existingPopup = document.getElementById('image-popup-modal');
